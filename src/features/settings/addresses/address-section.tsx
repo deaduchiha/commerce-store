@@ -106,7 +106,7 @@ export function AddressSection() {
         <CardHeader>
           <CardTitle>آدرس‌ها</CardTitle>
           <CardDescription>
-            مدیریت آدرس‌های تحویل برای سفارش کفش.
+            مدیریت آدرس‌های تحویل برای سفارش.
           </CardDescription>
           <CardAction>
             <Button type="button" onClick={openCreateDialog}>

@@ -7,7 +7,6 @@ import { Button } from '#/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -67,12 +66,7 @@ function LoadedProfileCard({ profile }: LoadedProfileCardProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>پروفایل</CardTitle>
-        <CardDescription>
-          نام نمایشی خود را ویرایش کنید.
-        </CardDescription>
-      </CardHeader>
+
       <form
         onSubmit={(e) => {
           e.preventDefault()
