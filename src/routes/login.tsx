@@ -1,12 +1,20 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { authClient } from '#/lib/auth-client'
+import { getSession } from '#/lib/auth.functions'
 
 export const Route = createFileRoute('/login')({
+  beforeLoad: async () => {
+    const session = await getSession()
+
+    if (session) {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
   component: LoginPage,
 })
 
@@ -54,7 +62,7 @@ function LoginPage() {
       return
     }
 
-    await navigate({ to: '/' })
+    await navigate({ to: '/dashboard' })
   }
 
   return (

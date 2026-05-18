@@ -34,7 +34,7 @@ export const auth = betterAuth({
       },
       signUpOnVerification: {
         getTempEmail: phone =>
-          `${phone.replace(/\D/g, '')}@phone.sneakstore.local`,
+          `${phone.replace(/\D/g, '')}@sneakstore.ir`,
         getTempName: phone => phone,
       },
     }),
