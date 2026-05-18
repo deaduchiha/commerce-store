@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@daypicker/persian':
+        specifier: ^10.0.1
+        version: 10.0.1(@types/react@19.2.14)(react@19.2.6)
       '@faker-js/faker':
         specifier: ^10.3.0
         version: 10.4.0
@@ -86,6 +89,9 @@ importers:
       date-fns:
         specifier: ^4.2.1
         version: 4.2.1
+      date-fns-jalali:
+        specifier: 4.1.0-0
+        version: 4.1.0-0
       drizzle-kit:
         specifier: ^0.31.9
         version: 0.31.10
@@ -536,6 +542,25 @@ packages:
 
   '@date-fns/tz@1.4.1':
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
+
+  '@daypicker/persian@10.0.1':
+    resolution: {integrity: sha512-dRgANykUb+QOMaHNlYx1Vz9G4HXT2RC2SLQ6RBdIkGYImBHteFJ72zvISSEQ7EepcYpS4CGXL2D+P9f5ddbAZg==}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  '@daypicker/react@10.0.1':
+    resolution: {integrity: sha512-lH4YQz4iMBWP8hsI1bD9Eg0T7t503IkSUR/WDGGkV5mKZvwVv+ukCkJz7yN+uVFBv7vHTK+ww7a5EvlkeFwPYQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@dotenvx/dotenvx@1.66.0':
     resolution: {integrity: sha512-qlQFhHUjhRDybrinqLAD0MClVZDOrsq80O8eD5iSjz3Qa/4f3Jg7SQrOaSobrRyP1QaWIYLGtGpj2c7H0D8NUw==}
@@ -3472,6 +3497,9 @@ packages:
     resolution: {integrity: sha512-23XHcCF+coGYevirZceTVD7NdJOqVn+49IHyxgszm+JIiHLoB2TkmPtsYkNWT1pvRSGkc35L6NHs0yHkN2SumA==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
+  date-fns-jalali@4.1.0-0:
+    resolution: {integrity: sha512-hTIP/z+t+qKwBDcmmsnmjWTduxCg+5KfdqWQvb2X/8C9+knYY6epN/pfxdDuyVlSVeFz0sM5eEfwIUQ70U4ckg==}
+
   date-fns@4.2.1:
     resolution: {integrity: sha512-37RhSdxaG1suen6VDCza6rNrQfooyQh57HFVPwQGEq2QWliVLzPQZ8Oa017weOu+HZCnzI7N3Pf/wyoBKfEqrA==}
 
@@ -6378,6 +6406,22 @@ snapshots:
 
   '@date-fns/tz@1.4.1': {}
 
+  '@daypicker/persian@10.0.1(@types/react@19.2.14)(react@19.2.6)':
+    dependencies:
+      '@date-fns/tz': 1.4.1
+      '@daypicker/react': 10.0.1(@types/react@19.2.14)(react@19.2.6)
+      date-fns-jalali: 4.1.0-0
+      react: 19.2.6
+    optionalDependencies:
+      '@types/react': 19.2.14
+
+  '@daypicker/react@10.0.1(@types/react@19.2.14)(react@19.2.6)':
+    dependencies:
+      react: 19.2.6
+      react-day-picker: 10.0.1(@types/react@19.2.14)(react@19.2.6)
+    optionalDependencies:
+      '@types/react': 19.2.14
+
   '@dotenvx/dotenvx@1.66.0':
     dependencies:
       commander: 11.1.0
@@ -9215,6 +9259,8 @@ snapshots:
       whatwg-url: 16.0.1(@noble/hashes@2.2.0)
     transitivePeerDependencies:
       - '@noble/hashes'
+
+  date-fns-jalali@4.1.0-0: {}
 
   date-fns@4.2.1: {}
 

@@ -1,11 +1,11 @@
-import type { DayButton, Locale } from 'react-day-picker'
-import { faIR } from 'date-fns/locale'
+import type { DayButton } from 'react-day-picker'
+import { faIR, DayPicker as PersianDayPicker } from '@daypicker/persian'
+import { format } from 'date-fns-jalali'
+import { faIR as faIRJalali } from 'date-fns-jalali/locale'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import * as React from 'react'
-import {
-  DayPicker,
-  getDefaultClassNames,
-} from 'react-day-picker'
+import { getDefaultClassNames } from 'react-day-picker'
+
 import { Button, buttonVariants } from '#/components/ui/button.tsx'
 import { cn } from '#/lib/utils.ts'
 
@@ -15,17 +15,17 @@ function Calendar({
   showOutsideDays = true,
   captionLayout = 'label',
   buttonVariant = 'ghost',
-  locale,
+  locale = faIR,
   formatters,
   components,
   ...props
-}: React.ComponentProps<typeof DayPicker> & {
+}: React.ComponentProps<typeof PersianDayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant']
 }) {
   const defaultClassNames = getDefaultClassNames()
 
   return (
-    <DayPicker
+    <PersianDayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
         'group/calendar bg-background p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent',
@@ -34,16 +34,8 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
-      locale={faIR}
-      formatters={{
-        formatMonthDropdown: date =>
-          date.toLocaleString(faIR.code, { month: 'short' }),
-        formatYearDropdown: date =>
-          date.toLocaleString(faIR.code, { year: 'numeric' }),
-        formatDay: date =>
-          date.toLocaleString(faIR.code, { day: 'numeric' }),
-        ...formatters,
-      }}
+      locale={locale}
+      formatters={formatters}
       classNames={{
         root: cn('w-fit', defaultClassNames.root),
         months: cn(
@@ -88,7 +80,6 @@ function Calendar({
             : 'flex items-center gap-1 rounded-(--cell-radius) text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground',
           defaultClassNames.caption_label,
         ),
-        // table: 'w-full border-collapse',
         weekdays: cn('flex', defaultClassNames.weekdays),
         weekday: cn(
           'flex-1 rounded-(--cell-radius) text-[0.8rem] font-normal text-muted-foreground select-none',
@@ -162,9 +153,7 @@ function Calendar({
             <ChevronDownIcon className={cn('size-4', className)} {...props} />
           )
         },
-        DayButton: ({ ...props }) => (
-          <CalendarDayButton locale={faIR} {...props} />
-        ),
+        DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
@@ -185,9 +174,8 @@ function CalendarDayButton({
   className,
   day,
   modifiers,
-  locale,
   ...props
-}: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {
+}: React.ComponentProps<typeof DayButton>) {
   const defaultClassNames = getDefaultClassNames()
 
   const ref = React.useRef<HTMLButtonElement>(null)
@@ -201,7 +189,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString(locale?.code)}
+      data-day={format(day.date, 'yyyy-MM-dd', { locale: faIRJalali })}
       data-selected-single={
         modifiers.selected
         && !modifiers.range_start

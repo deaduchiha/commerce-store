@@ -1,6 +1,5 @@
 import type { AnyFieldApi } from '@tanstack/react-form'
 import { format, parseISO } from 'date-fns'
-import { faIR } from 'date-fns/locale'
 import { CalendarIcon } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
@@ -17,6 +16,7 @@ import {
   PopoverTrigger,
 } from '#/components/ui/popover'
 import { useShowFieldError } from '#/features/settings/components/field-validation'
+import { formatPersianDate } from '#/lib/date'
 import { cn } from '#/lib/utils'
 
 interface FormDatePickerProps {
@@ -38,6 +38,8 @@ export function FormDatePicker({
 }: FormDatePickerProps) {
   const showError = useShowFieldError(field)
   const selected = field.state.value ? parseISO(field.state.value) : undefined
+  const minDate = new Date(fromYear, 0, 1)
+  const maxDate = new Date(toYear, 11, 31)
 
   return (
     <Field data-invalid={showError}>
@@ -56,9 +58,7 @@ export function FormDatePicker({
             aria-invalid={showError}
           >
             <CalendarIcon className="size-4" />
-            {selected
-              ? format(selected, 'd MMMM yyyy', { locale: faIR })
-              : placeholder}
+            {selected ? formatPersianDate(selected) : placeholder}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -71,10 +71,9 @@ export function FormDatePicker({
               field.handleChange(date ? format(date, 'yyyy-MM-dd') : '')
               field.handleBlur()
             }}
-            disabled={date =>
-              date > new Date() || date < new Date(`${fromYear}-01-01`)}
-            startMonth={new Date(fromYear, 0)}
-            endMonth={new Date(toYear, 11)}
+            disabled={date => date > new Date() || date < minDate}
+            startMonth={minDate}
+            endMonth={maxDate}
             autoFocus
           />
         </PopoverContent>
