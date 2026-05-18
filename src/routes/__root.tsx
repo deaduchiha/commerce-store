@@ -1,15 +1,15 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { TanStackDevtools } from '@tanstack/react-devtools'
+// import { TanStackDevtools } from '@tanstack/react-devtools'
 import {
   createRootRouteWithContext,
   HeadContent,
   Link,
   Scripts,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+// import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Button } from '#/components/ui/button'
 import { TooltipProvider } from '#/components/ui/tooltip'
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
+// import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
 interface MyRouterContext {
@@ -65,7 +65,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <TooltipProvider>
           {children}
         </TooltipProvider>
-        <TanStackDevtools
+        {/* <TanStackDevtools
           config={{
             position: 'bottom-right',
           }}
@@ -76,7 +76,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             },
             TanStackQueryDevtools,
           ]}
-        />
+        /> */}
         <Scripts />
       </body>
     </html>
