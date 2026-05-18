@@ -43,6 +43,8 @@ export const user = sqliteTable(
     role: text('role', { enum: ['admin', 'user', 'author'] })
       .notNull()
       .default('user'),
+    gender: text('gender', { enum: ['male', 'female', 'other'] }),
+    birthday: integer('birthday', { mode: 'timestamp_ms' }),
   },
   table => [
     uniqueIndex('user_phone_number_uidx').on(table.phoneNumber),

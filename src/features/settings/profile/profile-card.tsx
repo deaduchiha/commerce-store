@@ -1,4 +1,4 @@
-import type { Profile, UpdateProfileInput } from '#/orpc/schemas/profile'
+import type { Profile } from '#/orpc/schemas/profile'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -7,6 +7,7 @@ import { Button } from '#/components/ui/button'
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -14,8 +15,9 @@ import {
 import { Skeleton } from '#/components/ui/skeleton'
 import { FormStatus } from '#/features/settings/components/form-status'
 import { ProfileFormFields } from '#/features/settings/profile/profile-form-fields'
+import { toProfileFormValues, toProfileUpdatePayload } from '#/features/settings/profile/profile-form.values'
 import { orpc } from '#/orpc/client'
-import { updateProfileInputSchema } from '#/orpc/schemas/profile'
+import { profileFormSchema } from '#/orpc/schemas/profile'
 
 function ProfileCardSkeleton() {
   return (
@@ -25,6 +27,7 @@ function ProfileCardSkeleton() {
         <Skeleton className="h-4 w-64" />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-full" />
         <Skeleton className="h-8 w-full" />
         <Skeleton className="h-8 w-full" />
       </CardContent>
@@ -51,22 +54,25 @@ function LoadedProfileCard({ profile }: LoadedProfileCardProps) {
   )
 
   const form = useForm({
-    defaultValues: {
-      name: profile.name,
-    } satisfies UpdateProfileInput,
+    defaultValues: toProfileFormValues(profile),
     validators: {
-      onChange: updateProfileInputSchema,
-      onBlur: updateProfileInputSchema,
-      onSubmit: updateProfileInputSchema,
+      onChange: profileFormSchema,
+      onBlur: profileFormSchema,
+      onSubmit: profileFormSchema,
     },
     onSubmit: async ({ value }) => {
-      await updateMutation.mutateAsync(value)
+      await updateMutation.mutateAsync(toProfileUpdatePayload(value))
     },
   })
 
   return (
     <Card>
-
+      <CardHeader>
+        <CardTitle>پروفایل</CardTitle>
+        <CardDescription>
+          اطلاعات حساب خود را ویرایش کنید.
+        </CardDescription>
+      </CardHeader>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -74,10 +80,7 @@ function LoadedProfileCard({ profile }: LoadedProfileCardProps) {
         }}
       >
         <CardContent className="flex flex-col gap-5">
-          <ProfileFormFields
-            form={form}
-
-          />
+          <ProfileFormFields form={form} />
           <FormStatus
             errorMessage={
               updateMutation.isError
@@ -123,7 +126,7 @@ export function ProfileCard() {
 
   return (
     <LoadedProfileCard
-      key={`${profileQuery.data.id}-${profileQuery.data.name}`}
+      key={`${profileQuery.data.id}-${profileQuery.data.name}-${profileQuery.data.gender}-${profileQuery.data.birthday}`}
       profile={profileQuery.data}
     />
   )

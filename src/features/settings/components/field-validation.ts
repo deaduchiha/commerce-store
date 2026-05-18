@@ -2,17 +2,16 @@ import type { AnyFieldApi } from '@tanstack/react-form'
 import { useStore } from '@tanstack/react-form'
 
 export function useShowFieldError(field: AnyFieldApi) {
+  const errors = useStore(field.store, state => state.meta.errors)
+  const isTouched = useStore(field.store, state => state.meta.isTouched)
+  const isBlurred = useStore(field.store, state => state.meta.isBlurred)
   const submissionAttempts = useStore(
     field.form.store,
     state => state.submissionAttempts,
   )
 
-  const hasErrors = field.state.meta.errors.length > 0
-
   return (
-    hasErrors
-    && (field.state.meta.isTouched
-      || field.state.meta.isBlurred
-      || submissionAttempts > 0)
+    errors.length > 0
+    && (isTouched || isBlurred || submissionAttempts > 0)
   )
 }

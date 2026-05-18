@@ -1,5 +1,7 @@
 import type { ProfileForm } from '#/features/settings/profile/profile-form.types'
+import { FormDatePicker } from '#/features/settings/components/form-date-picker'
 import { FormTextField } from '#/features/settings/components/form-text-field'
+import { ProfileGenderField } from '#/features/settings/profile/profile-gender-field'
 
 interface ProfileFormFieldsProps {
   form: ProfileForm
@@ -7,7 +9,7 @@ interface ProfileFormFieldsProps {
 
 export function ProfileFormFields({ form }: ProfileFormFieldsProps) {
   return (
-    <div className="flex flex-col gap-5 max-w-sm">
+    <div className="grid-cols-2 grid gap-5">
       <form.Field name="name">
         {field => (
           <FormTextField
@@ -19,6 +21,20 @@ export function ProfileFormFields({ form }: ProfileFormFieldsProps) {
         )}
       </form.Field>
 
+      <form.Field name="gender">
+        {field => <ProfileGenderField field={field} />}
+      </form.Field>
+
+      <form.Field name="birthday">
+        {field => (
+          <FormDatePicker
+            field={field}
+            label="تاریخ تولد"
+            description="برای پیشنهادهای بهتر سایز و مدل کفش."
+            placeholder="انتخاب تاریخ تولد"
+          />
+        )}
+      </form.Field>
     </div>
   )
 }

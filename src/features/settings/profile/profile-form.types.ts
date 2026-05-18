@@ -1,15 +1,16 @@
-import type { UpdateProfileInput } from '#/orpc/schemas/profile'
+import type { ProfileFormValues } from '#/features/settings/profile/profile-form.values'
+
 import { useForm } from '@tanstack/react-form'
-import { updateProfileInputSchema } from '#/orpc/schemas/profile'
+import { profileFormSchema } from '#/orpc/schemas/profile'
 
 /** Type-only — mirrors `useForm` in `ProfileCard`; never called. */
 function _profileFormTypeHelper() {
   return useForm({
-    defaultValues: {} as UpdateProfileInput,
+    defaultValues: {} as ProfileFormValues,
     validators: {
-      onChange: updateProfileInputSchema,
-      onBlur: updateProfileInputSchema,
-      onSubmit: updateProfileInputSchema,
+      onChange: profileFormSchema,
+      onBlur: profileFormSchema,
+      onSubmit: profileFormSchema,
     },
   })
 }

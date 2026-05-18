@@ -1,9 +1,11 @@
 import type { OrpcContext } from '#/orpc/context'
 import { ORPCError, os } from '@orpc/server'
-
+import { parseISO, startOfDay } from 'date-fns'
 import { eq } from 'drizzle-orm'
+
 import { db } from '#/db'
 import { user } from '#/db/schema'
+import { timestampToIsoDate } from '#/lib/date'
 import { requireSession } from '#/orpc/lib/require-session'
 import {
   profileSchema,
@@ -11,6 +13,14 @@ import {
 } from '#/orpc/schemas/profile'
 
 function toProfile(row: typeof user.$inferSelect) {
+  const birthday = row.birthday
+    ? timestampToIsoDate(
+        row.birthday instanceof Date
+          ? row.birthday.getTime()
+          : row.birthday,
+      )
+    : null
+
   return profileSchema.parse({
     id: row.id,
     name: row.name,
@@ -19,7 +29,13 @@ function toProfile(row: typeof user.$inferSelect) {
     phoneNumberVerified: row.phoneNumberVerified ?? false,
     role: row.role,
     image: row.image ?? null,
+    gender: row.gender ?? null,
+    birthday,
   })
+}
+
+function isoDateToDbBirthday(iso: string) {
+  return startOfDay(parseISO(iso))
 }
 
 export const get = os.handler(async ({ context }) => {
@@ -47,7 +63,11 @@ export const update = os
 
     const [row] = await db
       .update(user)
-      .set({ name: input.name })
+      .set({
+        name: input.name,
+        gender: input.gender,
+        birthday: input.birthday ? isoDateToDbBirthday(input.birthday) : null,
+      })
       .where(eq(user.id, session.user.id))
       .returning()
 
