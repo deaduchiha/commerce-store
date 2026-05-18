@@ -3,4 +3,8 @@ import { tanstackConfig } from '@tanstack/eslint-config'
 
 export default antfu({
   ...tanstackConfig,
+  rules: {
+    'node/prefer-global/process': 'off',
+    'no-console': 'off',
+  },
 })
