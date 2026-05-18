@@ -5,7 +5,7 @@ import { routeBreadcrumb } from '#/lib/breadcrumb'
 import { dashboardBeforeLoad } from '#/lib/dashboard-route'
 
 export const Route = createFileRoute('/dashboard')({
-  staticData: routeBreadcrumb('Dashboard'),
+  staticData: routeBreadcrumb('داشبورد'),
   beforeLoad: dashboardBeforeLoad,
   component: DashboardLayoutRoute,
 })

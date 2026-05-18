@@ -7,6 +7,7 @@ import {
   FieldLabel,
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
+import { useShowFieldError } from '#/features/settings/components/field-validation'
 
 interface FormTextFieldProps {
   field: AnyFieldApi
@@ -27,11 +28,10 @@ export function FormTextField({
   placeholder,
   autoComplete,
 }: FormTextFieldProps) {
-  const isInvalid
-    = field.state.meta.isTouched && !field.state.meta.isValid
+  const showError = useShowFieldError(field)
 
   return (
-    <Field data-invalid={isInvalid}>
+    <Field data-invalid={showError}>
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <Input
@@ -44,9 +44,9 @@ export function FormTextField({
         disabled={disabled}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        aria-invalid={isInvalid}
+        aria-invalid={showError}
       />
-      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+      {showError && <FieldError errors={field.state.meta.errors} />}
     </Field>
   )
 }
