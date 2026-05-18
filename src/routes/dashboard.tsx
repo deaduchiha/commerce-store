@@ -1,43 +1,28 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
 
 import { DashboardLayout } from '#/components/dashboard/dashboard-layout'
-import { getSession } from '#/lib/auth.functions'
+import { dashboardBeforeLoad } from '#/lib/dashboard-route'
+
+function getDashboardTitle(pathname: string) {
+  if (pathname.startsWith('/dashboard/settings')) {
+    return 'تنظیمات'
+  }
+  return 'Dashboard'
+}
 
 export const Route = createFileRoute('/dashboard')({
-  beforeLoad: async () => {
-    const session = await getSession()
-
-    if (!session) {
-      throw redirect({ to: '/login' })
-    }
-
-    return { session }
-  },
-  component: DashboardPage,
+  beforeLoad: dashboardBeforeLoad,
+  component: DashboardLayoutRoute,
 })
 
-function DashboardPage() {
+function DashboardLayoutRoute() {
   const { session } = Route.useRouteContext()
+  const pathname = useRouterState({ select: state => state.location.pathname })
+  const title = getDashboardTitle(pathname)
 
   return (
-    <DashboardLayout session={session}>
-      <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-        <h2 className="text-lg font-semibold">Welcome back</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Signed in as
-          {' '}
-          <span className="font-medium text-foreground">
-            {session.user.phoneNumber ?? session.user.name}
-          </span>
-          {session.user.role && (
-            <span className="ms-2 capitalize text-muted-foreground">
-              (
-              {session.user.role}
-              )
-            </span>
-          )}
-        </p>
-      </div>
+    <DashboardLayout session={session} title={title}>
+      <Outlet />
     </DashboardLayout>
   )
 }

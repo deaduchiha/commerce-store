@@ -1,7 +1,7 @@
 import type { getSession } from '#/lib/auth.functions'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 
-import { LayoutDashboard, LogOut, Settings } from 'lucide-react'
+import { LayoutDashboard, LogOut, MapPin, User } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -19,9 +19,17 @@ import { authClient } from '#/lib/auth-client'
 
 type DashboardSession = NonNullable<Awaited<ReturnType<typeof getSession>>>
 
-const navItems = [
+const mainNavItems = [
   { title: 'Dashboard', to: '/dashboard' as const, icon: LayoutDashboard },
-  { title: 'Settings', to: '/dashboard' as const, icon: Settings, disabled: true },
+]
+
+const settingsNavItems = [
+  { title: 'پروفایل', to: '/dashboard/settings/profile' as const, icon: User },
+  {
+    title: 'آدرس‌ها',
+    to: '/dashboard/settings/address-profile' as const,
+    icon: MapPin,
+  },
 ]
 
 interface AppSidebarProps {
@@ -30,8 +38,13 @@ interface AppSidebarProps {
 
 export function AppSidebar({ session }: AppSidebarProps) {
   const navigate = useNavigate()
+  const pathname = useRouterState({ select: s => s.location.pathname })
   const displayName = session.user.phoneNumber ?? session.user.name ?? 'User'
   const initial = displayName.charAt(0).toUpperCase()
+
+  function isActive(to: string) {
+    return pathname === to || pathname.startsWith(`${to}/`)
+  }
 
   return (
     <Sidebar side="right">
@@ -60,34 +73,42 @@ export function AppSidebar({ session }: AppSidebarProps) {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const disabled = 'disabled' in item && item.disabled
+              {mainNavItems.map(item => (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.to)}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.to}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild={!disabled}
-                      isActive={item.title === 'Dashboard'}
-                      disabled={disabled}
-                      tooltip={item.title}
-                    >
-                      {disabled
-                        ? (
-                            <>
-                              <item.icon />
-                              <span>{item.title}</span>
-                            </>
-                          )
-                        : (
-                            <Link to={item.to}>
-                              <item.icon />
-                              <span>{item.title}</span>
-                            </Link>
-                          )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+        <SidebarGroup>
+          <SidebarGroupLabel>تنظیمات</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {settingsNavItems.map(item => (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.to)}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.to}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
