@@ -2,6 +2,7 @@ import type { getSession } from '#/lib/auth.functions'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 
 import { LayoutDashboard, LogOut, User } from 'lucide-react'
+import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Button } from '#/components/ui/button'
 import {
   Sidebar,
@@ -32,8 +33,7 @@ interface AppSidebarProps {
 export function AppSidebar({ session }: AppSidebarProps) {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: s => s.location.pathname })
-  const displayName = session.user.name ?? session.user.phoneNumber ?? 'User'
-  const role = { admin: 'مدیر', user: 'کاربر', author: 'نویسنده' }
+  const displayName = session.user.name ?? ''
 
   function isActive(to: string) {
     return pathname === to || pathname.startsWith(`${to}/`)
@@ -89,10 +89,15 @@ export function AppSidebar({ session }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
+              <Avatar>
+                <AvatarFallback>
+                  <User />
+                </AvatarFallback>
+              </Avatar>
               <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-medium">{displayName}</span>
                 <span className="truncate text-xs text-sidebar-foreground/70 capitalize">
-                  {role[session.user.role as keyof typeof role]}
+                  {session.user.phoneNumber}
                 </span>
               </div>
             </SidebarMenuButton>
