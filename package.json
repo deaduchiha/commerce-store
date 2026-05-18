@@ -1,7 +1,7 @@
 {
   "name": "sneakstore",
-  "private": true,
   "type": "module",
+  "private": true,
   "imports": {
     "#/*": "./src/*"
   },

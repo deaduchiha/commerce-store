@@ -61,7 +61,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body dir="rtl">
         <TooltipProvider>
           {children}
         </TooltipProvider>
