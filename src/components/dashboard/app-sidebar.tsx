@@ -32,8 +32,8 @@ interface AppSidebarProps {
 export function AppSidebar({ session }: AppSidebarProps) {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: s => s.location.pathname })
-  const displayName = session.user.phoneNumber ?? session.user.name ?? 'User'
-  const initial = displayName.charAt(0).toUpperCase()
+  const displayName = session.user.name ?? session.user.phoneNumber ?? 'User'
+  const role = { admin: 'مدیر', user: 'کاربر', author: 'نویسنده' }
 
   function isActive(to: string) {
     return pathname === to || pathname.startsWith(`${to}/`)
@@ -89,13 +89,10 @@ export function AppSidebar({ session }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="pointer-events-none">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
-                <span className="text-xs font-medium">{initial}</span>
-              </div>
               <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-medium">{displayName}</span>
                 <span className="truncate text-xs text-sidebar-foreground/70 capitalize">
-                  {session.user.role ?? 'user'}
+                  {role[session.user.role as keyof typeof role]}
                 </span>
               </div>
             </SidebarMenuButton>
@@ -115,7 +112,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
               }}
             >
               <LogOut />
-              <span>Sign out</span>
+              <span>خروج از حساب کاربری</span>
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>

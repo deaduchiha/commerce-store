@@ -13,7 +13,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
@@ -37,11 +36,6 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardProfileRoute = DashboardProfileRouteImport.update({
@@ -71,7 +65,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/api/$': typeof ApiSplatRoute
   '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -81,7 +74,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/api/$': typeof ApiSplatRoute
   '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -93,7 +85,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/api/$': typeof ApiSplatRoute
   '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -106,7 +97,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/$'
     | '/dashboard/profile'
-    | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -116,7 +106,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/$'
     | '/dashboard/profile'
-    | '/dashboard/settings'
     | '/dashboard'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -127,7 +116,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/$'
     | '/dashboard/profile'
-    | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -172,13 +160,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/profile': {
       id: '/dashboard/profile'
       path: '/profile'
@@ -212,13 +193,11 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardProfileRoute: typeof DashboardProfileRoute
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardProfileRoute: DashboardProfileRoute,
-  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 

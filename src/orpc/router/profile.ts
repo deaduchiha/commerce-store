@@ -1,10 +1,9 @@
-import { ORPCError } from '@orpc/server'
-import { os } from '@orpc/server'
-import { eq } from 'drizzle-orm'
+import type { OrpcContext } from '#/orpc/context'
+import { ORPCError, os } from '@orpc/server'
 
+import { eq } from 'drizzle-orm'
 import { db } from '#/db'
 import { user } from '#/db/schema'
-import type { OrpcContext } from '#/orpc/context'
 import { requireSession } from '#/orpc/lib/require-session'
 import {
   profileSchema,

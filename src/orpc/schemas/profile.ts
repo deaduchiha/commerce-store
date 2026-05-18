@@ -20,3 +20,10 @@ export const updateProfileInputSchema = z.object({
 
 export type Profile = z.infer<typeof profileSchema>
 export type UpdateProfileInput = z.infer<typeof updateProfileInputSchema>
+
+export function validateUpdateProfileInput(value: UpdateProfileInput) {
+  const result = updateProfileInputSchema.safeParse(value)
+  if (!result.success) {
+    return result.error.issues[0]?.message ?? 'ورودی نامعتبر است.'
+  }
+}

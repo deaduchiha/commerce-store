@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-router'
 // import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Button } from '#/components/ui/button'
+import { DirectionProvider } from '#/components/ui/direction'
+import { Toaster } from '#/components/ui/sonner'
 import { TooltipProvider } from '#/components/ui/tooltip'
 // import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
@@ -62,9 +64,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body dir="rtl">
-        <TooltipProvider>
-          {children}
-        </TooltipProvider>
+        <DirectionProvider dir="rtl" direction="rtl">
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
+        </DirectionProvider>
+        <Toaster style={{ fontFamily: 'unset' }} theme="light" richColors />
         {/* <TanStackDevtools
           config={{
             position: 'bottom-right',

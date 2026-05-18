@@ -1,46 +1,24 @@
-import type { FormApi } from '@tanstack/react-form'
-
-import {
-  Field,
-  FieldDescription,
-  FieldLabel,
-} from '#/components/ui/field'
-import { Input } from '#/components/ui/input'
+import type { ProfileForm } from '#/features/settings/profile/profile-form.types'
 import { FormTextField } from '#/features/settings/components/form-text-field'
-import type { UpdateProfileInput } from '#/features/settings/profile/profile.schema'
 
 interface ProfileFormFieldsProps {
-  form: FormApi<UpdateProfileInput, undefined>
-  phoneNumber: string | null
+  form: ProfileForm
 }
 
-export function ProfileFormFields({ form, phoneNumber }: ProfileFormFieldsProps) {
+export function ProfileFormFields({ form }: ProfileFormFieldsProps) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 max-w-sm">
       <form.Field name="name">
         {field => (
           <FormTextField
             field={field}
-            label="نام نمایشی"
-            description="این نام در سفارش‌ها و پیام‌های فروشگاه نمایش داده می‌شود."
+            label="نام و نام خانوادگی"
             placeholder="مثال: علی رضایی"
             autoComplete="name"
           />
         )}
       </form.Field>
 
-      <Field>
-        <FieldLabel htmlFor="phoneNumber">شماره موبایل</FieldLabel>
-        <FieldDescription>
-          برای ورود و اطلاع‌رسانی سفارش استفاده می‌شود. از تنظیمات پروفایل قابل تغییر نیست.
-        </FieldDescription>
-        <Input
-          id="phoneNumber"
-          value={phoneNumber ?? '—'}
-          disabled
-          readOnly
-        />
-      </Field>
     </div>
   )
 }
