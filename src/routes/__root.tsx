@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Button } from '#/components/ui/button'
+import { TooltipProvider } from '#/components/ui/tooltip'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
 
@@ -61,7 +62,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <TooltipProvider>
+          {children}
+        </TooltipProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
