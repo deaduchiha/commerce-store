@@ -56,5 +56,8 @@
     "scss",
     "pcss",
     "postcss"
+  ],
+  "cSpell.words": [
+    "orpc"
   ]
 }

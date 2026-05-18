@@ -1,7 +1,8 @@
 import type { getSession } from '#/lib/auth.functions'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 
-import { LayoutDashboard, LogOut, MapPin, User } from 'lucide-react'
+import { LayoutDashboard, LogOut, User } from 'lucide-react'
+import { Button } from '#/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -21,15 +22,7 @@ type DashboardSession = NonNullable<Awaited<ReturnType<typeof getSession>>>
 
 const mainNavItems = [
   { title: 'Dashboard', to: '/dashboard' as const, icon: LayoutDashboard },
-]
-
-const settingsNavItems = [
-  { title: 'پروفایل', to: '/dashboard/settings/profile' as const, icon: User },
-  {
-    title: 'آدرس‌ها',
-    to: '/dashboard/settings/address-profile' as const,
-    icon: MapPin,
-  },
+  { title: 'پروفایل', to: '/dashboard/profile' as const, icon: User },
 ]
 
 interface AppSidebarProps {
@@ -90,28 +83,6 @@ export function AppSidebar({ session }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>تنظیمات</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsNavItems.map(item => (
-                <SidebarMenuItem key={item.to}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.to)}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.to}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
@@ -130,8 +101,9 @@ export function AppSidebar({ session }: AppSidebarProps) {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip="Sign out"
+            <Button
+              variant="destructive"
+              className="w-full"
               onClick={() => {
                 void authClient.signOut({
                   fetchOptions: {
@@ -144,7 +116,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
             >
               <LogOut />
               <span>Sign out</span>
-            </SidebarMenuButton>
+            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
