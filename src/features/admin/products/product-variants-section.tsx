@@ -17,8 +17,13 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
 import { Switch } from '#/components/ui/switch'
 import { orpc } from '#/orpc/client'
 
@@ -259,10 +264,12 @@ export function ProductVariantsSection({
 
             <div className="grid gap-4 md:grid-cols-3">
               <VariantField
+                id={`variant-${index}-sku`}
                 label="SKU"
                 error={submitted ? fieldError(index, 'sku') : undefined}
               >
                 <Input
+                  id={`variant-${index}-sku`}
                   dir="ltr"
                   className="font-mono"
                   value={variant.sku}
@@ -273,10 +280,12 @@ export function ProductVariantsSection({
               </VariantField>
 
               <VariantField
+                id={`variant-${index}-size`}
                 label="سایز"
                 error={submitted ? fieldError(index, 'size') : undefined}
               >
                 <Input
+                  id={`variant-${index}-size`}
                   value={variant.size}
                   aria-invalid={submitted && Boolean(fieldError(index, 'size'))}
                   onChange={event =>
@@ -285,10 +294,12 @@ export function ProductVariantsSection({
               </VariantField>
 
               <VariantField
+                id={`variant-${index}-color`}
                 label="رنگ"
                 error={submitted ? fieldError(index, 'color') : undefined}
               >
                 <Input
+                  id={`variant-${index}-color`}
                   value={variant.color}
                   aria-invalid={submitted && Boolean(fieldError(index, 'color'))}
                   onChange={event =>
@@ -299,6 +310,7 @@ export function ProductVariantsSection({
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <VariantField
+                id={`variant-${index}-price`}
                 label="قیمت فروش (تومان)"
                 helper={variant.priceInRials > 0
                   ? formatTomansFromRials(variant.priceInRials)
@@ -306,6 +318,7 @@ export function ProductVariantsSection({
                 error={submitted ? fieldError(index, 'priceInRials') : undefined}
               >
                 <Input
+                  id={`variant-${index}-price`}
                   type="number"
                   min={0}
                   dir="ltr"
@@ -321,6 +334,7 @@ export function ProductVariantsSection({
               </VariantField>
 
               <VariantField
+                id={`variant-${index}-compare-price`}
                 label="قیمت قبل از تخفیف (تومان)"
                 helper={variant.compareAtPriceInRials
                   ? formatTomansFromRials(variant.compareAtPriceInRials)
@@ -332,6 +346,7 @@ export function ProductVariantsSection({
                 }
               >
                 <Input
+                  id={`variant-${index}-compare-price`}
                   type="number"
                   min={0}
                   dir="ltr"
@@ -352,11 +367,13 @@ export function ProductVariantsSection({
               </VariantField>
 
               <VariantField
+                id={`variant-${index}-stock`}
                 label="موجودی"
                 helper={`${formatFa(variant.stockQuantity)} عدد`}
                 error={submitted ? fieldError(index, 'stockQuantity') : undefined}
               >
                 <Input
+                  id={`variant-${index}-stock`}
                   type="number"
                   min={0}
                   dir="ltr"
@@ -371,8 +388,8 @@ export function ProductVariantsSection({
                 />
               </VariantField>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor={`variant-active-${index}`}>وضعیت فروش</Label>
+              <Field orientation="vertical">
+                <FieldLabel htmlFor={`variant-active-${index}`}>وضعیت فروش</FieldLabel>
                 <div className="flex h-8 items-center gap-3 border px-3">
                   <Switch
                     id={`variant-active-${index}`}
@@ -384,7 +401,10 @@ export function ProductVariantsSection({
                     {variant.isActive ? 'فعال' : 'غیرفعال'}
                   </span>
                 </div>
-              </div>
+                <FieldDescription>
+                  وضعیت این SKU در فروشگاه
+                </FieldDescription>
+              </Field>
             </div>
           </div>
         ))}
@@ -413,23 +433,25 @@ export function ProductVariantsSection({
 }
 
 function VariantField({
+  id,
   label,
   helper,
   error,
   children,
 }: {
+  id: string
   label: string
   helper?: string
   error?: string
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <Label>{label}</Label>
+    <Field data-invalid={Boolean(error)} className="min-w-0">
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
       {error
-        ? <p className="text-destructive text-xs">{error}</p>
-        : helper && <p className="text-muted-foreground text-xs">{helper}</p>}
-    </div>
+        ? <FieldError>{error}</FieldError>
+        : helper && <FieldDescription>{helper}</FieldDescription>}
+    </Field>
   )
 }

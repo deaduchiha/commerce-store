@@ -1,3 +1,4 @@
+import type { AnyFieldApi } from '@tanstack/react-form'
 import type {
   AdminProductDetail,
   AdminProductMeta,
@@ -5,8 +6,7 @@ import type {
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Braces, RotateCcw, Save, WandSparkles } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowRight, Braces, RotateCcw, Save, WandSparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { AdminPageHeader } from '#/components/admin/admin-page-header'
@@ -14,23 +14,33 @@ import { Button } from '#/components/ui/button'
 import {
   Card,
   CardContent,
-  CardFooter,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
-import { Label } from '#/components/ui/label'
 import { Skeleton } from '#/components/ui/skeleton'
 import { Switch } from '#/components/ui/switch'
 import { Textarea } from '#/components/ui/textarea'
 import { ProductImagesSection } from '#/features/admin/products/product-images-section'
 import { ProductVariantsSection } from '#/features/admin/products/product-variants-section'
+import { useShowFieldError } from '#/features/settings/components/field-validation'
 import { slugify } from '#/lib/slug'
+import { cn } from '#/lib/utils'
 import { orpc } from '#/orpc/client'
 import {
   adminProductFormWithMetaSchema,
   adminProductMetaSchema,
 } from '#/orpc/schemas/admin/products'
+
+const PRODUCT_EDITOR_FORM_ID = 'product-editor-form'
 
 interface AdminProductEditorProps {
   mode: 'create' | 'edit'
@@ -52,7 +62,7 @@ function toFormValues(product?: AdminProductDetail) {
     brand: product?.brand ?? '',
     shortDescription: product?.shortDescription ?? '',
     description: product?.description ?? '',
-    meta: toMetaValue(product),
+    metaJson: formatMetaJson(toMetaValue(product)),
     isActive: product?.isActive ?? true,
   }
 }
@@ -63,15 +73,17 @@ function optionalText(value: string | undefined) {
 }
 
 function toPayload(value: ReturnType<typeof toFormValues>) {
+  const meta = parseMetaJson(value.metaJson)
+
   return {
     name: value.name,
     slug: optionalText(value.slug),
     brand: optionalText(value.brand),
     shortDescription: optionalText(value.shortDescription),
     description: optionalText(value.description),
-    metaTitle: optionalText(value.meta.title),
-    metaDescription: optionalText(value.meta.description),
-    metaKeywords: optionalText(value.meta.keywords),
+    metaTitle: optionalText(meta.title),
+    metaDescription: optionalText(meta.description),
+    metaKeywords: optionalText(meta.keywords),
     isActive: value.isActive,
   }
 }
@@ -80,31 +92,8 @@ function formatMetaJson(value: AdminProductMeta) {
   return `${JSON.stringify(value, null, 2)}\n`
 }
 
-function parseMetaJson(json: string) {
-  try {
-    const parsed = JSON.parse(json) as unknown
-    const result = adminProductMetaSchema.safeParse(parsed)
-
-    if (!result.success) {
-      return {
-        value: null,
-        error: result.error.issues
-          .map((issue) => {
-            const path = issue.path.join('.') || 'meta'
-            return `${path}: ${issue.message}`
-          })
-          .join('\n'),
-      }
-    }
-
-    return { value: result.data, error: null }
-  }
-  catch (error) {
-    return {
-      value: null,
-      error: error instanceof Error ? error.message : 'JSON معتبر نیست.',
-    }
-  }
+function parseMetaJson(json: string): AdminProductMeta {
+  return adminProductMetaSchema.parse(JSON.parse(json))
 }
 
 export function AdminProductEditor({ mode, productId }: AdminProductEditorProps) {
@@ -184,6 +173,189 @@ export function AdminProductEditor({ mode, productId }: AdminProductEditorProps)
   )
 }
 
+interface ProductFieldProps {
+  field: AnyFieldApi
+  label: string
+  description?: string
+  className?: string
+}
+
+function ProductTextField({
+  field,
+  label,
+  description,
+  className,
+  inputClassName,
+  placeholder,
+  dir,
+}: ProductFieldProps & {
+  inputClassName?: string
+  placeholder?: string
+  dir?: React.HTMLAttributes<HTMLInputElement>['dir']
+}) {
+  const showError = useShowFieldError(field)
+
+  return (
+    <Field data-invalid={showError} className={className}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      <Input
+        id={field.name}
+        name={field.name}
+        dir={dir}
+        className={inputClassName}
+        value={field.state.value}
+        onBlur={field.handleBlur}
+        onChange={event => field.handleChange(event.target.value)}
+        placeholder={placeholder}
+        aria-invalid={showError}
+      />
+      {showError && <FieldError errors={field.state.meta.errors} />}
+    </Field>
+  )
+}
+
+function ProductTextareaField({
+  field,
+  label,
+  description,
+  className,
+  textareaClassName,
+  rows,
+  dir,
+}: ProductFieldProps & {
+  textareaClassName?: string
+  rows?: number
+  dir?: React.HTMLAttributes<HTMLTextAreaElement>['dir']
+}) {
+  const showError = useShowFieldError(field)
+
+  return (
+    <Field data-invalid={showError} className={className}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      <Textarea
+        id={field.name}
+        name={field.name}
+        dir={dir}
+        rows={rows}
+        value={field.state.value}
+        onBlur={field.handleBlur}
+        onChange={event => field.handleChange(event.target.value)}
+        className={textareaClassName}
+        aria-invalid={showError}
+      />
+      {showError && <FieldError errors={field.state.meta.errors} />}
+    </Field>
+  )
+}
+
+function ProductSwitchField({
+  field,
+  label,
+  description,
+  className,
+}: ProductFieldProps) {
+  const showError = useShowFieldError(field)
+
+  return (
+    <Field
+      data-invalid={showError}
+      orientation="horizontal"
+      className={cn('items-center justify-between border bg-muted/20 p-4', className)}
+    >
+      <FieldContent>
+        <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+        {description && <FieldDescription>{description}</FieldDescription>}
+        {showError && <FieldError errors={field.state.meta.errors} />}
+      </FieldContent>
+      <Switch
+        id={field.name}
+        checked={Boolean(field.state.value)}
+        onCheckedChange={field.handleChange}
+        aria-invalid={showError}
+      />
+    </Field>
+  )
+}
+
+function ProductMetaJsonField({
+  field,
+  initialValue,
+}: {
+  field: AnyFieldApi
+  initialValue: string
+}) {
+  const showError = useShowFieldError(field)
+
+  function handleFormat() {
+    try {
+      const meta = parseMetaJson(field.state.value)
+      field.handleChange(formatMetaJson(meta))
+    }
+    catch {
+      field.handleBlur()
+      toast.error('JSON متادیتا معتبر نیست.')
+    }
+  }
+
+  return (
+    <Field data-invalid={showError}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Braces className="size-4" />
+          Metadata JSON
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={handleFormat}>
+            <Braces />
+            فرمت JSON
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              field.handleChange(formatMetaJson({
+                title: 'خرید Nike Air Max 90',
+                description: 'خرید کتانی Nike Air Max 90 با تصاویر محصول، سایزبندی و موجودی به‌روز.',
+                keywords: 'nike, air max, sneaker',
+              }))
+            }}
+          >
+            <WandSparkles />
+            نمونه
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => field.handleChange(initialValue)}
+          >
+            <RotateCcw />
+            بازنشانی
+          </Button>
+        </div>
+      </div>
+
+      <FieldLabel htmlFor={field.name}>متادیتا</FieldLabel>
+      <FieldDescription>
+        کلیدهای مجاز: title، description، keywords
+      </FieldDescription>
+      <Textarea
+        id={field.name}
+        name={field.name}
+        dir="ltr"
+        spellCheck={false}
+        value={field.state.value}
+        onBlur={field.handleBlur}
+        onChange={event => field.handleChange(event.target.value)}
+        className="min-h-48 resize-y rounded-none font-mono text-sm leading-6 text-left"
+        aria-invalid={showError}
+      />
+      {showError && <FieldError errors={field.state.meta.errors} />}
+    </Field>
+  )
+}
+
 interface ProductEditorFormProps {
   mode: 'create' | 'edit'
   productId?: string
@@ -201,12 +373,7 @@ function ProductEditorForm({
   onSave,
   onRefetch,
 }: ProductEditorFormProps) {
-  const initialMetaJson = useMemo(
-    () => formatMetaJson(toMetaValue(product)),
-    [product],
-  )
-  const [metaJson, setMetaJson] = useState(initialMetaJson)
-  const [metaError, setMetaError] = useState<string | null>(null)
+  const initialMetaJson = formatMetaJson(toMetaValue(product))
 
   const form = useForm({
     defaultValues: toFormValues(product),
@@ -214,44 +381,43 @@ function ProductEditorForm({
       onSubmit: adminProductFormWithMetaSchema,
     },
     onSubmit: async ({ value }) => {
-      const result = parseMetaJson(metaJson)
-
-      if (!result.value) {
-        setMetaError(result.error)
-        toast.error('JSON متادیتا معتبر نیست.')
-        return
-      }
-
-      setMetaError(null)
-      setMetaJson(formatMetaJson(result.value))
-      await onSave({ ...value, meta: result.value })
+      await onSave(value)
     },
   })
 
-  function handleMetaFormat() {
-    const result = parseMetaJson(metaJson)
-
-    if (!result.value) {
-      setMetaError(result.error)
-      return
-    }
-
-    setMetaError(null)
-    setMetaJson(formatMetaJson(result.value))
-  }
-
   return (
-    <div className="flex w-full max-w-4xl flex-col gap-6">
-      <AdminPageHeader
-        title={mode === 'create' ? 'محصول جدید' : 'ویرایش محصول'}
-        description={
-          mode === 'create'
-            ? 'ابتدا اطلاعات پایه را ذخیره کنید، سپس تصاویر و تنوع‌ها را اضافه کنید.'
-            : product?.name
-        }
-      />
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <AdminPageHeader
+          title={mode === 'create' ? 'محصول جدید' : 'ویرایش محصول'}
+          description={
+            mode === 'create'
+              ? 'اطلاعات اصلی محصول را کامل کنید و ذخیره کنید.'
+              : product?.name
+          }
+        />
 
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" asChild>
+            <Link to="/dashboard/admin/products">
+              <ArrowRight />
+              بازگشت به لیست محصولات
+            </Link>
+          </Button>
+          <Button
+            type="submit"
+            form={PRODUCT_EDITOR_FORM_ID}
+            disabled={isSaving}
+          >
+            <Save />
+            {isSaving
+              ? 'در حال ذخیره...'
+              : mode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'}
+          </Button>
+        </div>
+      </div>
       <form
+        id={PRODUCT_EDITOR_FORM_ID}
         className="flex flex-col gap-6"
         onSubmit={(e) => {
           e.preventDefault()
@@ -261,93 +427,75 @@ function ProductEditorForm({
         <Card>
           <CardHeader>
             <CardTitle>اطلاعات پایه</CardTitle>
+            <CardDescription></CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-5 md:grid-cols-2">
             <form.Field name="name">
               {field => (
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <Label htmlFor="name">نام محصول</Label>
-                  <Input
-                    id="name"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={e => field.handleChange(e.target.value)}
-                  />
-                </div>
+                <ProductTextField
+                  field={field}
+                  label="نام محصول"
+                  description="نامی که در لیست و صفحه محصول نمایش داده می‌شود."
+                  className="md:col-span-2"
+                />
               )}
             </form.Field>
 
             <form.Field name="slug">
               {field => (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="slug">اسلاگ (URL)</Label>
-                  <Input
-                    id="slug"
-                    dir="ltr"
-                    className="font-mono text-start"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={e => field.handleChange(e.target.value)}
-                    placeholder={slugify(form.state.values.name) || 'product-slug'}
-                  />
-                </div>
+                <ProductTextField
+                  field={field}
+                  label="اسلاگ (URL)"
+                  description="اگر خالی بماند، از نام محصول ساخته می‌شود."
+                  dir="ltr"
+                  inputClassName="font-mono text-start"
+                  placeholder={slugify(form.state.values.name) || 'product-slug'}
+                />
               )}
             </form.Field>
 
             <form.Field name="brand">
               {field => (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="brand">برند</Label>
-                  <Input
-                    id="brand"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={e => field.handleChange(e.target.value)}
-                  />
-                </div>
+                <ProductTextField
+                  field={field}
+                  label="برند"
+                  description="مثل Nike، Adidas یا نام برند داخلی."
+                />
               )}
             </form.Field>
 
             <form.Field name="shortDescription">
               {field => (
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <Label htmlFor="shortDescription">توضیح کوتاه (لیست محصولات)</Label>
-                  <Textarea
-                    id="shortDescription"
-                    rows={2}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={e => field.handleChange(e.target.value)}
-                  />
-                </div>
+                <ProductTextareaField
+                  field={field}
+                  label="توضیح کوتاه (لیست محصولات)"
+                  description="متن کوتاه برای کارت محصول و خلاصه صفحه."
+                  rows={3}
+                  className="md:col-span-2"
+                />
               )}
             </form.Field>
 
             <form.Field name="description">
               {field => (
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <Label htmlFor="description">توضیحات کامل</Label>
-                  <Textarea
-                    id="description"
-                    rows={6}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={e => field.handleChange(e.target.value)}
-                  />
-                </div>
+                <ProductTextareaField
+                  field={field}
+                  label="توضیحات کامل"
+                  description="توضیح کامل شامل ویژگی‌ها، کاربرد و جزئیات مهم محصول."
+                  rows={7}
+                  className="md:col-span-2"
+                />
               )}
             </form.Field>
 
             <form.Field name="isActive">
               {field => (
-                <div className="flex items-center gap-3 md:col-span-2">
-                  <Switch
-                    id="isActive"
-                    checked={field.state.value}
-                    onCheckedChange={field.handleChange}
-                  />
-                  <Label htmlFor="isActive">نمایش در فروشگاه</Label>
-                </div>
+                <ProductSwitchField
+                  field={field}
+                  label="نمایش در فروشگاه"
+                  description="محصول غیرفعال در فروشگاه نمایش داده نمی‌شود."
+                  className="md:col-span-2"
+                />
               )}
             </form.Field>
           </CardContent>
@@ -356,72 +504,36 @@ function ProductEditorForm({
         <Card>
           <CardHeader>
             <CardTitle>سئو (SEO)</CardTitle>
+            <CardDescription>
+              متادیتا فقط از این JSON خوانده می‌شود و قبل از ذخیره اعتبارسنجی می‌شود.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Braces className="size-4" />
-                Metadata JSON
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" onClick={handleMetaFormat}>
-                  <Braces />
-                  فرمت JSON
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setMetaJson(formatMetaJson({
-                      title: 'خرید Nike Air Max 90',
-                      description: 'خرید کتانی Nike Air Max 90 با تصاویر محصول، سایزبندی و موجودی به‌روز.',
-                      keywords: 'nike, air max, sneaker',
-                    }))
-                    setMetaError(null)
-                  }}
-                >
-                  <WandSparkles />
-                  نمونه
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setMetaJson(initialMetaJson)
-                    setMetaError(null)
-                  }}
-                >
-                  <RotateCcw />
-                  بازنشانی
-                </Button>
-              </div>
-            </div>
-
-            <Textarea
-              dir="ltr"
-              spellCheck={false}
-              value={metaJson}
-              onChange={event => setMetaJson(event.target.value)}
-              className="min-h-48 resize-y rounded-none font-mono text-sm leading-6 text-left"
-              aria-invalid={Boolean(metaError)}
-            />
-
-            {metaError && (
-              <pre className="border border-destructive/30 bg-destructive/10 p-3 text-left text-xs whitespace-pre-wrap text-destructive">
-                {metaError}
-              </pre>
-            )}
+          <CardContent className="grid gap-4">
+            <form.Field name="metaJson">
+              {field => (
+                <ProductMetaJsonField
+                  field={field}
+                  initialValue={initialMetaJson}
+                />
+              )}
+            </form.Field>
           </CardContent>
-          <CardFooter className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={isSaving}>
-              <Save />
-              {isSaving ? 'در حال ذخیره...' : 'ذخیره محصول'}
-            </Button>
-            <Button type="button" variant="outline" asChild>
-              <Link to="/dashboard/admin/products">بازگشت به لیست</Link>
-            </Button>
-          </CardFooter>
         </Card>
+
+        <div className="flex flex-col-reverse gap-3 border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+          <Button type="button" variant="outline" asChild>
+            <Link to="/dashboard/admin/products">
+              <ArrowRight />
+              بازگشت به لیست محصولات
+            </Link>
+          </Button>
+          <Button type="submit" disabled={isSaving}>
+            <Save />
+            {isSaving
+              ? 'در حال ذخیره...'
+              : mode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'}
+          </Button>
+        </div>
       </form>
 
       {mode === 'edit' && productId && product && (

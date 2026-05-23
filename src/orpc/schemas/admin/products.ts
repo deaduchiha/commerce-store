@@ -74,7 +74,28 @@ export const adminProductFormWithMetaSchema = z.object({
   brand: z.string(),
   shortDescription: z.string(),
   description: z.string(),
-  meta: adminProductMetaSchema,
+  metaJson: z.string().superRefine((value, ctx) => {
+    try {
+      adminProductMetaSchema.parse(JSON.parse(value))
+    }
+    catch (error) {
+      if (error instanceof z.ZodError) {
+        for (const issue of error.issues) {
+          ctx.addIssue({
+            code: 'custom',
+            message: issue.message,
+            path: issue.path,
+          })
+        }
+        return
+      }
+
+      ctx.addIssue({
+        code: 'custom',
+        message: 'JSON متادیتا معتبر نیست.',
+      })
+    }
+  }),
   isActive: z.boolean(),
 })
 
