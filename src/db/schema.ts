@@ -166,12 +166,38 @@ export const products = sqliteTable(
     id: text('id').primaryKey().$defaultFn(() => createId()),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
+    shortDescription: text('short_description'),
     description: text('description'),
     brand: text('brand'),
+    metaTitle: text('meta_title'),
+    metaDescription: text('meta_description'),
+    metaKeywords: text('meta_keywords'),
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
     ...timestamps,
   },
   table => [index('products_slug_idx').on(table.slug)],
+)
+
+export const productImages = sqliteTable(
+  'product_images',
+  {
+    id: text('id').primaryKey().$defaultFn(() => createId()),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    /** Public URL path, e.g. /uploads/products/{id}/{file}.webp */
+    path: text('path').notNull(),
+    alt: text('alt'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+  },
+  table => [
+    index('product_images_product_id_idx').on(table.productId),
+    index('product_images_product_sort_idx').on(
+      table.productId,
+      table.sortOrder,
+    ),
+  ],
 )
 
 /** Size/color stock unit — price in Iranian Rial (integer, no decimals). */
@@ -343,6 +369,14 @@ export const addressRelations = relations(addresses, ({ one, many }) => ({
 
 export const productRelations = relations(products, ({ many }) => ({
   variants: many(productVariants),
+  images: many(productImages),
+}))
+
+export const productImageRelations = relations(productImages, ({ one }) => ({
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
 }))
 
 export const productVariantRelations = relations(

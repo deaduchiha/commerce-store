@@ -1,15 +1,19 @@
+import type { z } from 'zod'
 import type { OrpcContext } from '#/orpc/context'
 import { ORPCError, os } from '@orpc/server'
-import { count, desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq, notInArray } from 'drizzle-orm'
 
 import { db } from '#/db'
-import { products, productVariants } from '#/db/schema'
+import { productImages, products, productVariants } from '#/db/schema'
 import { slugify } from '#/lib/slug'
+import { deleteProductImageFile } from '#/lib/uploads/product-images'
 import { requireAdmin } from '#/orpc/lib/require-admin'
 import {
+  adminProductDetailSchema,
   adminProductIdSchema,
   adminProductInputSchema,
-  adminProductSchema,
+  adminProductListItemSchema,
+  saveProductVariantsInputSchema,
 } from '#/orpc/schemas/admin/products'
 
 function emptyToNull(value: string | undefined) {
@@ -17,24 +21,32 @@ function emptyToNull(value: string | undefined) {
   return trimmed || null
 }
 
-function toAdminProduct(
-  row: typeof products.$inferSelect,
-  variantCount: number,
-) {
-  return adminProductSchema.parse({
+function toProductImage(row: typeof productImages.$inferSelect) {
+  return {
     id: row.id,
-    name: row.name,
-    slug: row.slug,
-    description: row.description ?? null,
-    brand: row.brand ?? null,
-    isActive: row.isActive,
-    variantCount,
+    productId: row.productId,
+    path: row.path,
+    alt: row.alt ?? null,
+    sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  })
+  }
 }
 
-async function uniqueSlug(base: string) {
+function toProductVariant(row: typeof productVariants.$inferSelect) {
+  return {
+    id: row.id,
+    productId: row.productId,
+    sku: row.sku,
+    size: row.size,
+    color: row.color,
+    priceInRials: row.priceInRials,
+    compareAtPriceInRials: row.compareAtPriceInRials ?? null,
+    stockQuantity: row.stockQuantity,
+    isActive: row.isActive,
+  }
+}
+
+async function uniqueSlug(base: string, excludeId?: string) {
   let slug = base
   let suffix = 0
 
@@ -45,7 +57,7 @@ async function uniqueSlug(base: string) {
       .where(eq(products.slug, slug))
       .limit(1)
 
-    if (!existing) {
+    if (!existing || existing.id === excludeId) {
       return slug
     }
 
@@ -54,13 +66,77 @@ async function uniqueSlug(base: string) {
   }
 }
 
-async function getVariantCount(productId: string) {
-  const [result] = await db
-    .select({ value: count() })
+async function loadProductDetail(productId: string) {
+  const [row] = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1)
+
+  if (!row) {
+    return null
+  }
+
+  const images = await db
+    .select()
+    .from(productImages)
+    .where(eq(productImages.productId, productId))
+    .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt))
+
+  const variants = await db
+    .select()
     .from(productVariants)
     .where(eq(productVariants.productId, productId))
+    .orderBy(asc(productVariants.createdAt))
 
-  return result?.value ?? 0
+  return adminProductDetailSchema.parse({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    shortDescription: row.shortDescription ?? null,
+    description: row.description ?? null,
+    brand: row.brand ?? null,
+    metaTitle: row.metaTitle ?? null,
+    metaDescription: row.metaDescription ?? null,
+    metaKeywords: row.metaKeywords ?? null,
+    isActive: row.isActive,
+    images: images.map(toProductImage),
+    variants: variants.map(toProductVariant),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  })
+}
+
+function productPatchFromInput(
+  input: Partial<z.infer<typeof adminProductInputSchema>>,
+  existing?: typeof products.$inferSelect,
+) {
+  return {
+    name: input.name ?? existing?.name,
+    shortDescription:
+      input.shortDescription !== undefined
+        ? emptyToNull(input.shortDescription)
+        : existing?.shortDescription,
+    description:
+      input.description !== undefined
+        ? emptyToNull(input.description)
+        : existing?.description,
+    brand:
+      input.brand !== undefined ? emptyToNull(input.brand) : existing?.brand,
+    metaTitle:
+      input.metaTitle !== undefined
+        ? emptyToNull(input.metaTitle)
+        : existing?.metaTitle,
+    metaDescription:
+      input.metaDescription !== undefined
+        ? emptyToNull(input.metaDescription)
+        : existing?.metaDescription,
+    metaKeywords:
+      input.metaKeywords !== undefined
+        ? emptyToNull(input.metaKeywords)
+        : existing?.metaKeywords,
+    isActive: input.isActive ?? existing?.isActive ?? true,
+  }
 }
 
 export const list = os.handler(async ({ context }) => {
@@ -70,9 +146,31 @@ export const list = os.handler(async ({ context }) => {
   const rows = await db.select().from(products).orderBy(desc(products.createdAt))
 
   return Promise.all(
-    rows.map(async row =>
-      toAdminProduct(row, await getVariantCount(row.id)),
-    ),
+    rows.map(async (row) => {
+      const [variantResult] = await db
+        .select({ value: count() })
+        .from(productVariants)
+        .where(eq(productVariants.productId, row.id))
+
+      const [cover] = await db
+        .select({ path: productImages.path })
+        .from(productImages)
+        .where(eq(productImages.productId, row.id))
+        .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt))
+        .limit(1)
+
+      return adminProductListItemSchema.parse({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        brand: row.brand ?? null,
+        isActive: row.isActive,
+        variantCount: variantResult?.value ?? 0,
+        imagePath: cover?.path ?? null,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      })
+    }),
   )
 })
 
@@ -82,17 +180,13 @@ export const get = os
     const { headers } = context as OrpcContext
     await requireAdmin(headers)
 
-    const [row] = await db
-      .select()
-      .from(products)
-      .where(eq(products.id, input.id))
-      .limit(1)
+    const detail = await loadProductDetail(input.id)
 
-    if (!row) {
+    if (!detail) {
       throw new ORPCError('NOT_FOUND', { message: 'Product not found.' })
     }
 
-    return toAdminProduct(row, await getVariantCount(row.id))
+    return detail
   })
 
 export const create = os
@@ -103,19 +197,25 @@ export const create = os
 
     const baseSlug = input.slug ?? slugify(input.name)
     const slug = await uniqueSlug(baseSlug || 'product')
+    const patch = productPatchFromInput(input)
 
     const [row] = await db
       .insert(products)
       .values({
         name: input.name,
         slug,
-        description: emptyToNull(input.description),
-        brand: emptyToNull(input.brand),
-        isActive: input.isActive ?? true,
+        shortDescription: patch.shortDescription ?? null,
+        description: patch.description ?? null,
+        brand: patch.brand ?? null,
+        metaTitle: patch.metaTitle ?? null,
+        metaDescription: patch.metaDescription ?? null,
+        metaKeywords: patch.metaKeywords ?? null,
+        isActive: patch.isActive ?? true,
       })
       .returning()
 
-    return toAdminProduct(row!, 0)
+    const detail = await loadProductDetail(row!.id)
+    return detail!
   })
 
 export const update = os
@@ -140,28 +240,96 @@ export const update = os
 
     let slug = existing.slug
     if (input.data.slug && input.data.slug !== existing.slug) {
-      slug = await uniqueSlug(input.data.slug)
+      slug = await uniqueSlug(input.data.slug, input.id)
     }
 
-    const [row] = await db
+    const patch = productPatchFromInput(input.data, existing)
+
+    await db
       .update(products)
       .set({
         name: input.data.name ?? existing.name,
         slug,
-        description:
-          input.data.description !== undefined
-            ? emptyToNull(input.data.description)
-            : existing.description,
-        brand:
-          input.data.brand !== undefined
-            ? emptyToNull(input.data.brand)
-            : existing.brand,
-        isActive: input.data.isActive ?? existing.isActive,
+        shortDescription: patch.shortDescription,
+        description: patch.description,
+        brand: patch.brand,
+        metaTitle: patch.metaTitle,
+        metaDescription: patch.metaDescription,
+        metaKeywords: patch.metaKeywords,
+        isActive: patch.isActive,
       })
       .where(eq(products.id, input.id))
-      .returning()
 
-    return toAdminProduct(row!, await getVariantCount(input.id))
+    const detail = await loadProductDetail(input.id)
+    return detail!
+  })
+
+export const saveVariants = os
+  .input(saveProductVariantsInputSchema)
+  .handler(async ({ context, input }) => {
+    const { headers } = context as OrpcContext
+    await requireAdmin(headers)
+
+    const [product] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, input.productId))
+      .limit(1)
+
+    if (!product) {
+      throw new ORPCError('NOT_FOUND', { message: 'Product not found.' })
+    }
+
+    const skus = input.variants.map(v => v.sku)
+    if (new Set(skus).size !== skus.length) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'Each variant must have a unique SKU.',
+      })
+    }
+
+    const keptIds = input.variants
+      .map(v => v.id)
+      .filter((id): id is string => Boolean(id))
+
+    if (keptIds.length > 0) {
+      await db.delete(productVariants).where(
+        and(
+          eq(productVariants.productId, input.productId),
+          notInArray(productVariants.id, keptIds),
+        ),
+      )
+    }
+    else {
+      await db
+        .delete(productVariants)
+        .where(eq(productVariants.productId, input.productId))
+    }
+
+    for (const variant of input.variants) {
+      const values = {
+        productId: input.productId,
+        sku: variant.sku,
+        size: variant.size,
+        color: variant.color,
+        priceInRials: variant.priceInRials,
+        compareAtPriceInRials: variant.compareAtPriceInRials ?? null,
+        stockQuantity: variant.stockQuantity,
+        isActive: variant.isActive,
+      }
+
+      if (variant.id) {
+        await db
+          .update(productVariants)
+          .set(values)
+          .where(eq(productVariants.id, variant.id))
+      }
+      else {
+        await db.insert(productVariants).values(values)
+      }
+    }
+
+    const detail = await loadProductDetail(input.productId)
+    return detail!
   })
 
 export const remove = os
@@ -169,6 +337,15 @@ export const remove = os
   .handler(async ({ context, input }) => {
     const { headers } = context as OrpcContext
     await requireAdmin(headers)
+
+    const images = await db
+      .select()
+      .from(productImages)
+      .where(eq(productImages.productId, input.id))
+
+    for (const image of images) {
+      await deleteProductImageFile(image.path)
+    }
 
     const [row] = await db
       .delete(products)

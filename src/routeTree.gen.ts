@@ -24,6 +24,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardAdminProductsIndexRouteImport } from './routes/dashboard/admin/products/index'
 import { Route as DashboardAdminProductsNewRouteImport } from './routes/dashboard/admin/products/new'
 import { Route as DashboardAdminProductsProductIdEditRouteImport } from './routes/dashboard/admin/products/$productId/edit'
+import { Route as ApiAdminProductsProductIdImagesRouteImport } from './routes/api/admin/products/$productId/images'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -103,6 +104,12 @@ const DashboardAdminProductsProductIdEditRoute =
     path: '/products/$productId/edit',
     getParentRoute: () => DashboardAdminRoute,
   } as any)
+const ApiAdminProductsProductIdImagesRoute =
+  ApiAdminProductsProductIdImagesRouteImport.update({
+    id: '/api/admin/products/$productId/images',
+    path: '/api/admin/products/$productId/images',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/admin/products/new': typeof DashboardAdminProductsNewRoute
   '/dashboard/admin/products/': typeof DashboardAdminProductsIndexRoute
+  '/api/admin/products/$productId/images': typeof ApiAdminProductsProductIdImagesRoute
   '/dashboard/admin/products/$productId/edit': typeof DashboardAdminProductsProductIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -134,6 +142,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin': typeof DashboardAdminIndexRoute
   '/dashboard/admin/products/new': typeof DashboardAdminProductsNewRoute
   '/dashboard/admin/products': typeof DashboardAdminProductsIndexRoute
+  '/api/admin/products/$productId/images': typeof ApiAdminProductsProductIdImagesRoute
   '/dashboard/admin/products/$productId/edit': typeof DashboardAdminProductsProductIdEditRoute
 }
 export interface FileRoutesById {
@@ -152,6 +161,7 @@ export interface FileRoutesById {
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/admin/products/new': typeof DashboardAdminProductsNewRoute
   '/dashboard/admin/products/': typeof DashboardAdminProductsIndexRoute
+  '/api/admin/products/$productId/images': typeof ApiAdminProductsProductIdImagesRoute
   '/dashboard/admin/products/$productId/edit': typeof DashboardAdminProductsProductIdEditRoute
 }
 export interface FileRouteTypes {
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/'
     | '/dashboard/admin/products/new'
     | '/dashboard/admin/products/'
+    | '/api/admin/products/$productId/images'
     | '/dashboard/admin/products/$productId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/admin/products/new'
     | '/dashboard/admin/products'
+    | '/api/admin/products/$productId/images'
     | '/dashboard/admin/products/$productId/edit'
   id:
     | '__root__'
@@ -203,6 +215,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/'
     | '/dashboard/admin/products/new'
     | '/dashboard/admin/products/'
+    | '/api/admin/products/$productId/images'
     | '/dashboard/admin/products/$productId/edit'
   fileRoutesById: FileRoutesById
 }
@@ -213,6 +226,7 @@ export interface RootRouteChildren {
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  ApiAdminProductsProductIdImagesRoute: typeof ApiAdminProductsProductIdImagesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -322,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminProductsProductIdEditRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/api/admin/products/$productId/images': {
+      id: '/api/admin/products/$productId/images'
+      path: '/api/admin/products/$productId/images'
+      fullPath: '/api/admin/products/$productId/images'
+      preLoaderRoute: typeof ApiAdminProductsProductIdImagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -371,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  ApiAdminProductsProductIdImagesRoute: ApiAdminProductsProductIdImagesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

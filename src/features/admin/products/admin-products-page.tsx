@@ -73,12 +73,25 @@ export function AdminProductsPage() {
       </div>
 
       <DataTable
-        columns={['نام', 'برند', 'اسلاگ', 'تنوع', 'وضعیت', 'عملیات']}
+        columns={['تصویر', 'نام', 'برند', 'اسلاگ', 'تنوع', 'وضعیت', 'عملیات']}
         isEmpty={products.length === 0}
         emptyMessage="محصولی ثبت نشده است."
       >
         {products.map(product => (
           <DataTableRow key={product.id}>
+            <DataTableCell>
+              {product.imagePath
+                ? (
+                    <img
+                      src={product.imagePath}
+                      alt=""
+                      className="size-10 rounded-md border object-cover"
+                    />
+                  )
+                : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+            </DataTableCell>
             <DataTableCell className="font-medium">{product.name}</DataTableCell>
             <DataTableCell>{product.brand ?? '—'}</DataTableCell>
             <DataTableCell className="font-mono text-xs">{product.slug}</DataTableCell>
