@@ -1,5 +1,6 @@
 import { createId } from '@paralleldrive/cuid2'
 import { relations, sql } from 'drizzle-orm'
+
 import {
   index,
   integer,
@@ -8,6 +9,7 @@ import {
   unique,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
+import { USER_ROLES } from '#/lib/roles'
 
 const timestamps = {
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
@@ -40,9 +42,7 @@ export const user = sqliteTable(
     phoneNumberVerified: integer('phone_number_verified', {
       mode: 'boolean',
     }),
-    role: text('role', { enum: ['admin', 'user', 'author'] })
-      .notNull()
-      .default('user'),
+    role: text('role', { enum: USER_ROLES }).notNull().default('user'),
     gender: text('gender', { enum: ['male', 'female', 'other'] }),
     birthday: integer('birthday', { mode: 'timestamp_ms' }),
   },

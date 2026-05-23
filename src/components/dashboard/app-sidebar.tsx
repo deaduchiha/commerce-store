@@ -1,7 +1,8 @@
 import type { getSession } from '#/lib/auth.functions'
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import type { UserRole } from '#/lib/roles'
 
-import { LayoutDashboard, LogOut, User } from 'lucide-react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { LayoutDashboard, LogOut, Shield, User } from 'lucide-react'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Button } from '#/components/ui/button'
 import {
@@ -18,12 +19,34 @@ import {
 
 } from '#/components/ui/sidebar'
 import { authClient } from '#/lib/auth-client'
+import { hasMinRole } from '#/lib/roles'
 
 type DashboardSession = NonNullable<Awaited<ReturnType<typeof getSession>>>
 
-const mainNavItems = [
-  { title: 'Dashboard', to: '/dashboard' as const, icon: LayoutDashboard },
-  { title: 'پروفایل', to: '/dashboard/profile' as const, icon: User },
+const mainNavItems: Array<{
+  title: string
+  to: '/dashboard' | '/dashboard/profile' | '/dashboard/admin'
+  icon: typeof LayoutDashboard
+  minRole: UserRole
+}> = [
+  {
+    title: 'Dashboard',
+    to: '/dashboard',
+    icon: LayoutDashboard,
+    minRole: 'user',
+  },
+  {
+    title: 'پروفایل',
+    to: '/dashboard/profile',
+    icon: User,
+    minRole: 'user',
+  },
+  {
+    title: 'پنل مدیریت',
+    to: '/dashboard/admin',
+    icon: Shield,
+    minRole: 'admin',
+  },
 ]
 
 interface AppSidebarProps {
@@ -66,20 +89,22 @@ export function AppSidebar({ session }: AppSidebarProps) {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map(item => (
-                <SidebarMenuItem key={item.to}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.to)}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.to}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainNavItems
+                .filter(item => hasMinRole(session.user.role, item.minRole))
+                .map(item => (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.to)}
+                      tooltip={item.title}
+                    >
+                      <Link to={item.to}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

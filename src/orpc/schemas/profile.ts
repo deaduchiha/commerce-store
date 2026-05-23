@@ -1,6 +1,8 @@
 import { parseISO } from 'date-fns'
 import { z } from 'zod'
 
+import { userRoleSchema } from '#/lib/roles'
+
 export const profileGenderSchema = z.enum(['male', 'female', 'other'])
 
 export const profileSchema = z.object({
@@ -9,7 +11,7 @@ export const profileSchema = z.object({
   email: z.string(),
   phoneNumber: z.string().nullable(),
   phoneNumberVerified: z.boolean(),
-  role: z.string(),
+  role: userRoleSchema,
   image: z.string().nullable(),
   gender: profileGenderSchema.nullable(),
   birthday: z

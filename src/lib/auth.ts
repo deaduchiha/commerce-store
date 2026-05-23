@@ -5,6 +5,7 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
 import { db } from '#/db'
 import * as schema from '#/db/schema'
+import { USER_ROLES } from '#/lib/roles'
 import { sendOtpSms } from '#/lib/send-otp'
 
 export const auth = betterAuth({
@@ -20,7 +21,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: {
-        type: ['admin', 'user', 'author'],
+        type: [...USER_ROLES],
         required: false,
         defaultValue: 'user',
         input: false,
@@ -41,3 +42,6 @@ export const auth = betterAuth({
     tanstackStartCookies(),
   ],
 })
+
+export type Session = typeof auth.$Infer.Session
+export type SessionUser = Session['user']
