@@ -62,6 +62,22 @@ export const adminProductFormSchema = z.object({
   isActive: z.boolean(),
 })
 
+export const adminProductMetaSchema = z.object({
+  title: z.string().trim().max(70).optional(),
+  description: z.string().trim().max(160).optional(),
+  keywords: z.string().trim().max(255).optional(),
+})
+
+export const adminProductFormWithMetaSchema = z.object({
+  name: z.string().trim().min(2, 'نام محصول باید حداقل ۲ کاراکتر باشد').max(120),
+  slug: z.string(),
+  brand: z.string(),
+  shortDescription: z.string(),
+  description: z.string(),
+  meta: adminProductMetaSchema,
+  isActive: z.boolean(),
+})
+
 export const adminProductInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z
@@ -103,6 +119,7 @@ export const adminProductIdSchema = z.object({
 export type AdminProductDetail = z.infer<typeof adminProductDetailSchema>
 export type AdminProductVariant = z.infer<typeof adminProductVariantSchema>
 export type AdminProductImage = z.infer<typeof adminProductImageSchema>
+export type AdminProductMeta = z.infer<typeof adminProductMetaSchema>
 export type AdminProductVariantInput = z.infer<
   typeof adminProductVariantInputSchema
 >

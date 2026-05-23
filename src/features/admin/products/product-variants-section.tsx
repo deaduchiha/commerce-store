@@ -3,10 +3,11 @@ import type {
   AdminProductVariantInput,
 } from '#/orpc/schemas/admin/products'
 import { useMutation } from '@tanstack/react-query'
-import { Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
   Card,
@@ -46,6 +47,78 @@ function fromDetail(variants: AdminProductDetail['variants']): AdminProductVaria
   }))
 }
 
+function rialsToTomans(value: number) {
+  return Math.round(value / 10)
+}
+
+function tomansToRials(value: number) {
+  return value * 10
+}
+
+function formatFa(value: number) {
+  return value.toLocaleString('fa-IR')
+}
+
+function formatTomansFromRials(value: number) {
+  return `${formatFa(rialsToTomans(value))} تومان`
+}
+
+function toNumber(value: string) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
+function validateVariants(variants: AdminProductVariantInput[]) {
+  const errors = new Map<string, string>()
+  const skuCounts = new Map<string, number>()
+
+  variants.forEach((variant) => {
+    const sku = variant.sku.trim()
+    if (sku) {
+      skuCounts.set(sku, (skuCounts.get(sku) ?? 0) + 1)
+    }
+  })
+
+  variants.forEach((variant, index) => {
+    const prefix = `variants.${index}`
+
+    if (!variant.sku.trim()) {
+      errors.set(`${prefix}.sku`, 'SKU لازم است.')
+    }
+    else if ((skuCounts.get(variant.sku.trim()) ?? 0) > 1) {
+      errors.set(`${prefix}.sku`, 'SKU تکراری است.')
+    }
+
+    if (!variant.size.trim()) {
+      errors.set(`${prefix}.size`, 'سایز لازم است.')
+    }
+
+    if (!variant.color.trim()) {
+      errors.set(`${prefix}.color`, 'رنگ لازم است.')
+    }
+
+    if (variant.priceInRials < 1) {
+      errors.set(`${prefix}.priceInRials`, 'قیمت باید بیشتر از صفر باشد.')
+    }
+
+    if (variant.stockQuantity < 0) {
+      errors.set(`${prefix}.stockQuantity`, 'موجودی نمی‌تواند منفی باشد.')
+    }
+
+    if (
+      variant.compareAtPriceInRials
+      && variant.compareAtPriceInRials <= variant.priceInRials
+    ) {
+      errors.set(
+        `${prefix}.compareAtPriceInRials`,
+        'قیمت قبل از تخفیف باید از قیمت فروش بیشتر باشد.',
+      )
+    }
+  })
+
+  return errors
+}
+
 interface ProductVariantsSectionProps {
   productId: string
   variants: AdminProductDetail['variants']
@@ -58,10 +131,19 @@ export function ProductVariantsSection({
   onSaved,
 }: ProductVariantsSectionProps) {
   const [variants, setVariants] = useState(() => fromDetail(initialVariants))
+  const [submitted, setSubmitted] = useState(false)
+
+  const errors = useMemo(() => validateVariants(variants), [variants])
+  const activeCount = variants.filter(variant => variant.isActive).length
+  const totalStock = variants.reduce(
+    (sum, variant) => sum + variant.stockQuantity,
+    0,
+  )
 
   const saveMutation = useMutation(
     orpc.admin.products.saveVariants.mutationOptions({
       onSuccess: () => {
+        setSubmitted(false)
         toast.success('تنوع‌ها ذخیره شد.')
         onSaved()
       },
@@ -86,121 +168,223 @@ export function ProductVariantsSection({
     setVariants(prev => prev.filter((_, i) => i !== index))
   }
 
+  function fieldError(index: number, field: keyof AdminProductVariantInput) {
+    return errors.get(`variants.${index}.${field}`)
+  }
+
+  function handleSave() {
+    setSubmitted(true)
+
+    if (variants.length === 0) {
+      toast.error('حداقل یک تنوع برای محصول اضافه کنید.')
+      return
+    }
+
+    if (errors.size > 0) {
+      toast.error('لطفا خطاهای فرم تنوع‌ها را برطرف کنید.')
+      return
+    }
+
+    saveMutation.mutate({
+      productId,
+      variants: variants.map(({ id, ...rest }) => ({
+        ...rest,
+        id,
+        sku: rest.sku.trim(),
+        size: rest.size.trim(),
+        color: rest.color.trim(),
+      })),
+    })
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>تنوع‌ها (سایز / رنگ)</CardTitle>
-        <CardDescription>
-          هر تنوع SKU، قیمت به ریال، موجودی و وضعیت فعال جداگانه دارد.
-        </CardDescription>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle>تنوع‌ها (سایز / رنگ)</CardTitle>
+            <CardDescription>
+              هر ردیف یک SKU قابل فروش با قیمت، موجودی و وضعیت جداگانه است.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">
+              {variants.length}
+              {' '}
+              ردیف
+            </Badge>
+            <Badge variant="secondary">
+              {activeCount}
+              {' '}
+              فعال
+            </Badge>
+            <Badge variant={totalStock > 0 ? 'outline' : 'destructive'}>
+              موجودی:
+              {' '}
+              {formatFa(totalStock)}
+            </Badge>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-4">
         {variants.length === 0 && (
-          <p className="text-muted-foreground text-sm">
+          <div className="border bg-muted/20 p-4 text-sm text-muted-foreground">
             حداقل یک تنوع برای فروش آنلاین اضافه کنید.
-          </p>
+          </div>
         )}
 
         {variants.map((variant, index) => (
           <div
             key={variant.id ?? `new-${index}`}
-            className="grid gap-4 rounded-lg border p-4 md:grid-cols-2 lg:grid-cols-3"
+            className="flex flex-col gap-5 border p-4"
           >
-            <div className="flex flex-col gap-2 md:col-span-2 lg:col-span-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
                   تنوع
                   {' '}
                   {index + 1}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => removeVariant(index)}
-                >
-                  <Trash2 />
-                </Button>
+                </Badge>
+                {variant.id && <Badge variant="secondary">ذخیره‌شده</Badge>}
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => removeVariant(index)}
+              >
+                <Trash2 />
+              </Button>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label>SKU</Label>
-              <Input
-                dir="ltr"
-                className="font-mono"
-                value={variant.sku}
-                onChange={e => updateVariant(index, { sku: e.target.value })}
-              />
+            <div className="grid gap-4 md:grid-cols-3">
+              <VariantField
+                label="SKU"
+                error={submitted ? fieldError(index, 'sku') : undefined}
+              >
+                <Input
+                  dir="ltr"
+                  className="font-mono"
+                  value={variant.sku}
+                  aria-invalid={submitted && Boolean(fieldError(index, 'sku'))}
+                  onChange={event =>
+                    updateVariant(index, { sku: event.target.value })}
+                />
+              </VariantField>
+
+              <VariantField
+                label="سایز"
+                error={submitted ? fieldError(index, 'size') : undefined}
+              >
+                <Input
+                  value={variant.size}
+                  aria-invalid={submitted && Boolean(fieldError(index, 'size'))}
+                  onChange={event =>
+                    updateVariant(index, { size: event.target.value })}
+                />
+              </VariantField>
+
+              <VariantField
+                label="رنگ"
+                error={submitted ? fieldError(index, 'color') : undefined}
+              >
+                <Input
+                  value={variant.color}
+                  aria-invalid={submitted && Boolean(fieldError(index, 'color'))}
+                  onChange={event =>
+                    updateVariant(index, { color: event.target.value })}
+                />
+              </VariantField>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <Label>سایز</Label>
-              <Input
-                value={variant.size}
-                onChange={e => updateVariant(index, { size: e.target.value })}
-              />
-            </div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <VariantField
+                label="قیمت فروش (تومان)"
+                helper={variant.priceInRials > 0
+                  ? formatTomansFromRials(variant.priceInRials)
+                  : '۰ تومان'}
+                error={submitted ? fieldError(index, 'priceInRials') : undefined}
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  dir="ltr"
+                  value={rialsToTomans(variant.priceInRials) || ''}
+                  aria-invalid={
+                    submitted && Boolean(fieldError(index, 'priceInRials'))
+                  }
+                  onChange={event =>
+                    updateVariant(index, {
+                      priceInRials: tomansToRials(toNumber(event.target.value)),
+                    })}
+                />
+              </VariantField>
 
-            <div className="flex flex-col gap-2">
-              <Label>رنگ</Label>
-              <Input
-                value={variant.color}
-                onChange={e => updateVariant(index, { color: e.target.value })}
-              />
-            </div>
+              <VariantField
+                label="قیمت قبل از تخفیف (تومان)"
+                helper={variant.compareAtPriceInRials
+                  ? formatTomansFromRials(variant.compareAtPriceInRials)
+                  : 'بدون قیمت قبل از تخفیف'}
+                error={
+                  submitted
+                    ? fieldError(index, 'compareAtPriceInRials')
+                    : undefined
+                }
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  dir="ltr"
+                  value={variant.compareAtPriceInRials
+                    ? rialsToTomans(variant.compareAtPriceInRials)
+                    : ''}
+                  aria-invalid={
+                    submitted
+                    && Boolean(fieldError(index, 'compareAtPriceInRials'))
+                  }
+                  onChange={event =>
+                    updateVariant(index, {
+                      compareAtPriceInRials: event.target.value
+                        ? tomansToRials(toNumber(event.target.value))
+                        : null,
+                    })}
+                />
+              </VariantField>
 
-            <div className="flex flex-col gap-2">
-              <Label>قیمت (ریال)</Label>
-              <Input
-                type="number"
-                min={0}
-                dir="ltr"
-                value={variant.priceInRials || ''}
-                onChange={e =>
-                  updateVariant(index, {
-                    priceInRials: Number(e.target.value) || 0,
-                  })}
-              />
-            </div>
+              <VariantField
+                label="موجودی"
+                helper={`${formatFa(variant.stockQuantity)} عدد`}
+                error={submitted ? fieldError(index, 'stockQuantity') : undefined}
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  dir="ltr"
+                  value={variant.stockQuantity || ''}
+                  aria-invalid={
+                    submitted && Boolean(fieldError(index, 'stockQuantity'))
+                  }
+                  onChange={event =>
+                    updateVariant(index, {
+                      stockQuantity: toNumber(event.target.value),
+                    })}
+                />
+              </VariantField>
 
-            <div className="flex flex-col gap-2">
-              <Label>قیمت قبل از تخفیف (ریال)</Label>
-              <Input
-                type="number"
-                min={0}
-                dir="ltr"
-                value={variant.compareAtPriceInRials ?? ''}
-                onChange={e =>
-                  updateVariant(index, {
-                    compareAtPriceInRials: e.target.value
-                      ? Number(e.target.value)
-                      : null,
-                  })}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label>موجودی</Label>
-              <Input
-                type="number"
-                min={0}
-                dir="ltr"
-                value={variant.stockQuantity || ''}
-                onChange={e =>
-                  updateVariant(index, {
-                    stockQuantity: Number(e.target.value) || 0,
-                  })}
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={variant.isActive}
-                onCheckedChange={checked =>
-                  updateVariant(index, { isActive: checked })}
-              />
-              <Label>فعال</Label>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor={`variant-active-${index}`}>وضعیت فروش</Label>
+                <div className="flex h-8 items-center gap-3 border px-3">
+                  <Switch
+                    id={`variant-active-${index}`}
+                    checked={variant.isActive}
+                    onCheckedChange={checked =>
+                      updateVariant(index, { isActive: checked })}
+                  />
+                  <span className="text-sm">
+                    {variant.isActive ? 'فعال' : 'غیرفعال'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -210,23 +394,42 @@ export function ProductVariantsSection({
           افزودن تنوع
         </Button>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <CheckCircle2 className="size-4" />
+          قیمت‌ها در فرم به تومان وارد می‌شوند.
+        </div>
         <Button
           type="button"
           disabled={saveMutation.isPending}
-          onClick={() => {
-            saveMutation.mutate({
-              productId,
-              variants: variants.map(({ id, ...rest }) => ({
-                ...rest,
-                id,
-              })),
-            })
-          }}
+          onClick={handleSave}
         >
-          {saveMutation.isPending ? 'در حال ذخیره…' : 'ذخیره تنوع‌ها'}
+          {saveMutation.isPending && <Loader2 className="animate-spin" />}
+          {saveMutation.isPending ? 'در حال ذخیره...' : 'ذخیره تنوع‌ها'}
         </Button>
       </CardFooter>
     </Card>
+  )
+}
+
+function VariantField({
+  label,
+  helper,
+  error,
+  children,
+}: {
+  label: string
+  helper?: string
+  error?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <Label>{label}</Label>
+      {children}
+      {error
+        ? <p className="text-destructive text-xs">{error}</p>
+        : helper && <p className="text-muted-foreground text-xs">{helper}</p>}
+    </div>
   )
 }
