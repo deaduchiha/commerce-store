@@ -6,5 +6,4 @@ export const PROFILE_GENDER_OPTIONS: {
 }[] = [
   { value: 'male', label: 'مرد' },
   { value: 'female', label: 'زن' },
-  { value: 'other', label: 'سایر' },
 ]

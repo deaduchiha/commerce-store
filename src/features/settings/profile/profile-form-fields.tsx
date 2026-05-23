@@ -30,7 +30,6 @@ export function ProfileFormFields({ form }: ProfileFormFieldsProps) {
           <FormDatePicker
             field={field}
             label="تاریخ تولد"
-            description="برای پیشنهادهای بهتر سایز و مدل کفش."
             placeholder="انتخاب تاریخ تولد"
           />
         )}

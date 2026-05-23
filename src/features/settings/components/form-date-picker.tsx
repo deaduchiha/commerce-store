@@ -1,7 +1,6 @@
 import type { AnyFieldApi } from '@tanstack/react-form'
 import { format, parseISO } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
-
 import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
 import {
@@ -83,8 +82,6 @@ export function FormDatePicker({
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              className="h-auto px-0 text-muted-foreground"
               onClick={() => {
                 field.handleChange('')
                 field.handleBlur()
