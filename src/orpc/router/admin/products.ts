@@ -1,7 +1,7 @@
 import type { z } from 'zod'
 import type { OrpcContext } from '#/orpc/context'
 import { ORPCError, os } from '@orpc/server'
-import { and, asc, count, desc, eq, notInArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq, like, notInArray, or } from 'drizzle-orm'
 
 import { db } from '#/db'
 import { productImages, products, productVariants } from '#/db/schema'
@@ -12,7 +12,9 @@ import {
   adminProductDetailSchema,
   adminProductIdSchema,
   adminProductInputSchema,
+  adminProductListInputSchema,
   adminProductListItemSchema,
+  adminProductListSchema,
   saveProductVariantsInputSchema,
 } from '#/orpc/schemas/admin/products'
 
@@ -139,40 +141,73 @@ function productPatchFromInput(
   }
 }
 
-export const list = os.handler(async ({ context }) => {
-  const { headers } = context as OrpcContext
-  await requireAdmin(headers)
+export const list = os
+  .input(adminProductListInputSchema)
+  .handler(async ({ context, input }) => {
+    const { headers } = context as OrpcContext
+    await requireAdmin(headers)
 
-  const rows = await db.select().from(products).orderBy(desc(products.createdAt))
+    const search = input.search?.trim()
+    const searchFilter = search
+      ? or(
+          like(products.name, `%${search}%`),
+          like(products.slug, `%${search}%`),
+          like(products.brand, `%${search}%`),
+        )
+      : undefined
 
-  return Promise.all(
-    rows.map(async (row) => {
-      const [variantResult] = await db
-        .select({ value: count() })
-        .from(productVariants)
-        .where(eq(productVariants.productId, row.id))
+    const [totalResult] = await db
+      .select({ value: count() })
+      .from(products)
+      .where(searchFilter)
+    const total = totalResult?.value ?? 0
+    const pageCount = Math.ceil(total / input.pageSize)
+    const offset = input.pageIndex * input.pageSize
 
-      const [cover] = await db
-        .select({ path: productImages.path })
-        .from(productImages)
-        .where(eq(productImages.productId, row.id))
-        .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt))
-        .limit(1)
+    const rows = await db
+      .select()
+      .from(products)
+      .where(searchFilter)
+      .orderBy(desc(products.createdAt))
+      .limit(input.pageSize)
+      .offset(offset)
 
-      return adminProductListItemSchema.parse({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        brand: row.brand ?? null,
-        isActive: row.isActive,
-        variantCount: variantResult?.value ?? 0,
-        imagePath: cover?.path ?? null,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      })
-    }),
-  )
-})
+    const items = await Promise.all(
+      rows.map(async (row) => {
+        const [variantResult] = await db
+          .select({ value: count() })
+          .from(productVariants)
+          .where(eq(productVariants.productId, row.id))
+
+        const [cover] = await db
+          .select({ path: productImages.path })
+          .from(productImages)
+          .where(eq(productImages.productId, row.id))
+          .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt))
+          .limit(1)
+
+        return adminProductListItemSchema.parse({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          brand: row.brand ?? null,
+          isActive: row.isActive,
+          variantCount: variantResult?.value ?? 0,
+          imagePath: cover?.path ?? null,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+        })
+      }),
+    )
+
+    return adminProductListSchema.parse({
+      items,
+      pageIndex: input.pageIndex,
+      pageSize: input.pageSize,
+      total,
+      pageCount,
+    })
+  })
 
 export const get = os
   .input(adminProductIdSchema)

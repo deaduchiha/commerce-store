@@ -33,6 +33,20 @@ export const adminProductListItemSchema = z.object({
   updatedAt: z.string(),
 })
 
+export const adminProductListInputSchema = z.object({
+  pageIndex: z.number().int().min(0).default(0),
+  pageSize: z.number().int().min(1).max(50).default(10),
+  search: z.string().trim().max(120).optional(),
+})
+
+export const adminProductListSchema = z.object({
+  items: z.array(adminProductListItemSchema),
+  pageIndex: z.number().int().min(0),
+  pageSize: z.number().int().min(1),
+  total: z.number().int().min(0),
+  pageCount: z.number().int().min(0),
+})
+
 export const adminProductDetailSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -140,6 +154,8 @@ export const adminProductIdSchema = z.object({
 export type AdminProductDetail = z.infer<typeof adminProductDetailSchema>
 export type AdminProductVariant = z.infer<typeof adminProductVariantSchema>
 export type AdminProductImage = z.infer<typeof adminProductImageSchema>
+export type AdminProductListItem = z.infer<typeof adminProductListItemSchema>
+export type AdminProductList = z.infer<typeof adminProductListSchema>
 export type AdminProductMeta = z.infer<typeof adminProductMetaSchema>
 export type AdminProductVariantInput = z.infer<
   typeof adminProductVariantInputSchema
