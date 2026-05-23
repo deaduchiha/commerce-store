@@ -2,7 +2,7 @@ import type { getSession } from '#/lib/auth.functions'
 import type { UserRole } from '#/lib/roles'
 
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { LayoutDashboard, LogOut, Shield, User } from 'lucide-react'
+import { LayoutDashboard, LogOut, User } from 'lucide-react'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Button } from '#/components/ui/button'
 import {
@@ -18,6 +18,7 @@ import {
   SidebarMenuItem,
 
 } from '#/components/ui/sidebar'
+import { adminNavItems, isAdminNavActive } from '#/lib/admin-nav'
 import { authClient } from '#/lib/auth-client'
 import { hasMinRole } from '#/lib/roles'
 
@@ -25,7 +26,7 @@ type DashboardSession = NonNullable<Awaited<ReturnType<typeof getSession>>>
 
 const mainNavItems: Array<{
   title: string
-  to: '/dashboard' | '/dashboard/profile' | '/dashboard/admin'
+  to: '/dashboard' | '/dashboard/profile'
   icon: typeof LayoutDashboard
   minRole: UserRole
 }> = [
@@ -40,12 +41,6 @@ const mainNavItems: Array<{
     to: '/dashboard/profile',
     icon: User,
     minRole: 'user',
-  },
-  {
-    title: 'پنل مدیریت',
-    to: '/dashboard/admin',
-    icon: Shield,
-    minRole: 'admin',
   },
 ]
 
@@ -108,6 +103,30 @@ export function AppSidebar({ session }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {hasMinRole(session.user.role, 'admin') && (
+          <SidebarGroup>
+            <SidebarGroupLabel>مدیریت</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminNavItems.map(item => (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isAdminNavActive(pathname, item)}
+                      tooltip={item.title}
+                    >
+                      <Link to={item.to}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">

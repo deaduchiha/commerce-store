@@ -1,12 +1,14 @@
-import type { UserRole } from '#/lib/roles'
+import type { AssignableUserRole, UserRole } from '#/lib/roles'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { toast } from 'sonner'
+import { AdminPageHeader } from '#/components/admin/admin-page-header'
 import {
   DataTable,
   DataTableCell,
   DataTableRow,
 } from '#/components/admin/data-table'
+import { Badge } from '#/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -15,7 +17,7 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { Skeleton } from '#/components/ui/skeleton'
-import { USER_ROLES } from '#/lib/roles'
+import { ASSIGNABLE_USER_ROLES } from '#/lib/roles'
 import { orpc } from '#/orpc/client'
 
 const roleLabels: Record<UserRole, string> = {
@@ -57,43 +59,52 @@ export function AdminUsersPage() {
   const users = usersQuery.data
 
   return (
-    <DataTable
-      columns={['نام', 'ایمیل', 'موبایل', 'نقش', 'تاریخ عضویت']}
-      isEmpty={users.length === 0}
-    >
-      {users.map(user => (
-        <DataTableRow key={user.id}>
-          <DataTableCell>{user.name}</DataTableCell>
-          <DataTableCell className="font-mono text-xs">{user.email}</DataTableCell>
-          <DataTableCell>{user.phoneNumber ?? '—'}</DataTableCell>
-          <DataTableCell>
-            <Select
-              value={user.role}
-              disabled={updateRoleMutation.isPending}
-              onValueChange={(role: UserRole) => {
-                updateRoleMutation.mutate({
-                  userId: user.id,
-                  role,
-                })
-              }}
-            >
-              <SelectTrigger className="w-[130px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {USER_ROLES.map(role => (
-                  <SelectItem key={role} value={role}>
-                    {roleLabels[role]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </DataTableCell>
-          <DataTableCell>
-            {new Date(user.createdAt).toLocaleDateString('fa-IR')}
-          </DataTableCell>
-        </DataTableRow>
-      ))}
-    </DataTable>
+    <div className="flex flex-col gap-6">
+      <AdminPageHeader title="کاربران" description="مشاهده و تغییر نقش کاربران" />
+      <DataTable
+        columns={['نام', 'ایمیل', 'موبایل', 'نقش', 'تاریخ عضویت']}
+        isEmpty={users.length === 0}
+      >
+        {users.map(user => (
+          <DataTableRow key={user.id}>
+            <DataTableCell>{user.name}</DataTableCell>
+            <DataTableCell className="font-mono text-xs">{user.email}</DataTableCell>
+            <DataTableCell>{user.phoneNumber ?? '—'}</DataTableCell>
+            <DataTableCell>
+              {user.role === 'admin'
+                ? (
+                    <Badge variant="secondary">{roleLabels.admin}</Badge>
+                  )
+                : (
+                    <Select
+                      value={user.role}
+                      disabled={updateRoleMutation.isPending}
+                      onValueChange={(role: AssignableUserRole) => {
+                        updateRoleMutation.mutate({
+                          userId: user.id,
+                          role,
+                        })
+                      }}
+                    >
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ASSIGNABLE_USER_ROLES.map(role => (
+                          <SelectItem key={role} value={role}>
+                            {roleLabels[role]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+            </DataTableCell>
+            <DataTableCell>
+              {new Date(user.createdAt).toLocaleDateString('fa-IR')}
+            </DataTableCell>
+          </DataTableRow>
+        ))}
+      </DataTable>
+    </div>
   )
 }

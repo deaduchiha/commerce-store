@@ -1,5 +1,5 @@
-import type { FileRouteTypes } from '#/routeTree.gen'
 import type { LucideIcon } from 'lucide-react'
+import type { FileRouteTypes } from '#/routeTree.gen'
 import {
   CreditCard,
   LayoutDashboard,
@@ -18,6 +18,18 @@ export interface AdminNavItem {
   icon: LucideIcon
   /** Prefix match for nested routes (e.g. products edit). */
   matchPrefix?: boolean
+}
+
+export function isAdminNavActive(pathname: string, item: AdminNavItem) {
+  if (item.matchPrefix) {
+    return pathname.startsWith(item.to)
+  }
+
+  if (item.to === '/dashboard/admin') {
+    return pathname === '/dashboard/admin' || pathname === '/dashboard/admin/'
+  }
+
+  return pathname === item.to || pathname.startsWith(`${item.to}/`)
 }
 
 export const adminNavItems: AdminNavItem[] = [

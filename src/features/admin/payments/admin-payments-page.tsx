@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
+import { AdminPageHeader } from '#/components/admin/admin-page-header'
 import {
   DataTable,
   DataTableCell,
@@ -40,40 +41,46 @@ export function AdminPaymentsPage() {
   const payments = paymentsQuery.data
 
   return (
-    <DataTable
-      columns={[
-        'شماره سفارش',
-        'مشتری',
-        'موبایل',
-        'روش پرداخت',
-        'وضعیت پرداخت',
-        'مبلغ',
-        'تاریخ',
-      ]}
-      isEmpty={payments.length === 0}
-      emptyMessage="هنوز سفارشی ثبت نشده است."
-    >
-      {payments.map(payment => (
-        <DataTableRow key={payment.id}>
-          <DataTableCell className="font-mono text-xs">
-            {payment.orderNumber}
-          </DataTableCell>
-          <DataTableCell>{payment.userName}</DataTableCell>
-          <DataTableCell>{payment.userPhone ?? '—'}</DataTableCell>
-          <DataTableCell>
-            {paymentMethodLabels[payment.paymentMethod]}
-          </DataTableCell>
-          <DataTableCell>
-            <Badge variant="outline">
-              {paymentStatusLabels[payment.paymentStatus]}
-            </Badge>
-          </DataTableCell>
-          <DataTableCell>{formatRials(payment.totalInRials)}</DataTableCell>
-          <DataTableCell>
-            {new Date(payment.createdAt).toLocaleDateString('fa-IR')}
-          </DataTableCell>
-        </DataTableRow>
-      ))}
-    </DataTable>
+    <div className="flex flex-col gap-6">
+      <AdminPageHeader
+        title="پرداخت‌ها"
+        description="مشاهده سفارش‌ها و وضعیت پرداخت"
+      />
+      <DataTable
+        columns={[
+          'شماره سفارش',
+          'مشتری',
+          'موبایل',
+          'روش پرداخت',
+          'وضعیت پرداخت',
+          'مبلغ',
+          'تاریخ',
+        ]}
+        isEmpty={payments.length === 0}
+        emptyMessage="هنوز سفارشی ثبت نشده است."
+      >
+        {payments.map(payment => (
+          <DataTableRow key={payment.id}>
+            <DataTableCell className="font-mono text-xs">
+              {payment.orderNumber}
+            </DataTableCell>
+            <DataTableCell>{payment.userName}</DataTableCell>
+            <DataTableCell>{payment.userPhone ?? '—'}</DataTableCell>
+            <DataTableCell>
+              {paymentMethodLabels[payment.paymentMethod]}
+            </DataTableCell>
+            <DataTableCell>
+              <Badge variant="outline">
+                {paymentStatusLabels[payment.paymentStatus]}
+              </Badge>
+            </DataTableCell>
+            <DataTableCell>{formatRials(payment.totalInRials)}</DataTableCell>
+            <DataTableCell>
+              {new Date(payment.createdAt).toLocaleDateString('fa-IR')}
+            </DataTableCell>
+          </DataTableRow>
+        ))}
+      </DataTable>
+    </div>
   )
 }

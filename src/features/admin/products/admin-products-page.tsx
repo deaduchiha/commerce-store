@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { toast } from 'sonner'
+import { AdminPageHeader } from '#/components/admin/admin-page-header'
 import {
   DataTable,
   DataTableCell,
@@ -57,9 +58,13 @@ export function AdminProductsPage() {
   const products = productsQuery.data
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button asChild>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <AdminPageHeader
+          title="محصولات"
+          description="افزودن، ویرایش و حذف محصولات"
+        />
+        <Button asChild className="shrink-0">
           <Link to="/dashboard/admin/products/new">
             <Plus />
             محصول جدید

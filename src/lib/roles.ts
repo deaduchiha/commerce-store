@@ -5,7 +5,14 @@ export const USER_ROLES = ['admin', 'user', 'author'] as const
 
 export type UserRole = (typeof USER_ROLES)[number]
 
+/** Roles an admin may assign in the panel (not `admin`). */
+export const ASSIGNABLE_USER_ROLES = ['user', 'author'] as const
+
+export type AssignableUserRole = (typeof ASSIGNABLE_USER_ROLES)[number]
+
 export const userRoleSchema = z.enum(USER_ROLES)
+
+export const assignableUserRoleSchema = z.enum(ASSIGNABLE_USER_ROLES)
 
 /** Higher rank inherits lower-tier access (admin → author → user). */
 const ROLE_RANK: Record<UserRole, number> = {

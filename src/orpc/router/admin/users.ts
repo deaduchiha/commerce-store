@@ -36,9 +36,25 @@ export const updateRole = os
     const { headers } = context as OrpcContext
     const session = await requireAdmin(headers)
 
-    if (input.userId === session.user.id && input.role !== 'admin') {
+    if (input.userId === session.user.id) {
       throw new ORPCError('BAD_REQUEST', {
-        message: 'You cannot remove your own admin access.',
+        message: 'You cannot change your own role.',
+      })
+    }
+
+    const [existing] = await db
+      .select({ role: user.role })
+      .from(user)
+      .where(eq(user.id, input.userId))
+      .limit(1)
+
+    if (!existing) {
+      throw new ORPCError('NOT_FOUND', { message: 'User not found.' })
+    }
+
+    if (existing.role === 'admin') {
+      throw new ORPCError('FORBIDDEN', {
+        message: 'Admin accounts cannot be changed from the panel.',
       })
     }
 
