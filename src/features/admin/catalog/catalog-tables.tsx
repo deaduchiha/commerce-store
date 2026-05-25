@@ -17,11 +17,13 @@ import {
 export function BrandsTable({
   items,
   isLoading,
+  emptyMessage,
   onEdit,
   onDelete,
 }: {
   items: AdminBrand[]
   isLoading: boolean
+  emptyMessage?: string
   onEdit: (item: AdminBrand) => void
   onDelete: (item: AdminBrand) => void
 }) {
@@ -30,6 +32,7 @@ export function BrandsTable({
       isLoading={isLoading}
       columns={['نام', 'اسلاگ', 'وب‌سایت', 'وضعیت', 'عملیات']}
       isEmpty={items.length === 0}
+      emptyMessage={emptyMessage}
     >
       {items.map(item => (
         <TableRow key={item.id}>
@@ -51,28 +54,31 @@ export function BrandsTable({
 
 export function CategoriesTable({
   items,
+  parentById,
   isLoading,
+  emptyMessage,
   onEdit,
   onDelete,
 }: {
   items: AdminCategory[]
+  parentById: Map<string, AdminCategory>
   isLoading: boolean
+  emptyMessage?: string
   onEdit: (item: AdminCategory) => void
   onDelete: (item: AdminCategory) => void
 }) {
-  const byId = new Map(items.map(item => [item.id, item]))
-
   return (
     <CatalogTable
       isLoading={isLoading}
       columns={['نام', 'والد', 'اسلاگ', 'ترتیب', 'وضعیت', 'عملیات']}
       isEmpty={items.length === 0}
+      emptyMessage={emptyMessage}
     >
       {items.map(item => (
         <TableRow key={item.id}>
           <TableCell className="font-medium">{item.name}</TableCell>
           <TableCell>
-            {item.parentId ? byId.get(item.parentId)?.name ?? '-' : '-'}
+            {item.parentId ? parentById.get(item.parentId)?.name ?? '-' : '-'}
           </TableCell>
           <TableCell className="text-xs">{item.slug}</TableCell>
           <TableCell>{item.sortOrder.toLocaleString('fa-IR')}</TableCell>
@@ -92,11 +98,13 @@ export function CategoriesTable({
 export function AttributesTable({
   items,
   isLoading,
+  emptyMessage,
   onEdit,
   onDelete,
 }: {
   items: AdminAttribute[]
   isLoading: boolean
+  emptyMessage?: string
   onEdit: (item: AdminAttribute) => void
   onDelete: (item: AdminAttribute) => void
 }) {
@@ -105,6 +113,7 @@ export function AttributesTable({
       isLoading={isLoading}
       columns={['نام', 'کد', 'نوع', 'محدوده', 'فیلتر', 'تنوع', 'مقادیر', 'عملیات']}
       isEmpty={items.length === 0}
+      emptyMessage={emptyMessage}
     >
       {items.map(item => (
         <TableRow key={item.id}>
@@ -130,11 +139,13 @@ export function AttributesTable({
 export function CollectionsTable({
   items,
   isLoading,
+  emptyMessage,
   onEdit,
   onDelete,
 }: {
   items: AdminCollection[]
   isLoading: boolean
+  emptyMessage?: string
   onEdit: (item: AdminCollection) => void
   onDelete: (item: AdminCollection) => void
 }) {
@@ -143,6 +154,7 @@ export function CollectionsTable({
       isLoading={isLoading}
       columns={['نام', 'اسلاگ', 'نوع', 'وضعیت', 'عملیات']}
       isEmpty={items.length === 0}
+      emptyMessage={emptyMessage}
     >
       {items.map(item => (
         <TableRow key={item.id}>
@@ -165,11 +177,13 @@ export function CollectionsTable({
 export function TagsTable({
   items,
   isLoading,
+  emptyMessage,
   onEdit,
   onDelete,
 }: {
   items: AdminTag[]
   isLoading: boolean
+  emptyMessage?: string
   onEdit: (item: AdminTag) => void
   onDelete: (item: AdminTag) => void
 }) {
@@ -178,6 +192,7 @@ export function TagsTable({
       isLoading={isLoading}
       columns={['نام', 'اسلاگ', 'نوع', 'رنگ', 'وضعیت', 'عملیات']}
       isEmpty={items.length === 0}
+      emptyMessage={emptyMessage}
     >
       {items.map(item => (
         <TableRow key={item.id}>

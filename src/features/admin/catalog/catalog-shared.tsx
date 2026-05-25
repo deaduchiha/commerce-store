@@ -36,28 +36,20 @@ import {
 } from '#/components/ui/table'
 import { Textarea } from '#/components/ui/textarea'
 
-export function CatalogPanel({
-  title,
+export function CatalogSectionActions({
   createLabel,
   onCreate,
-  children,
 }: {
-  title: string
   createLabel: string
   onCreate: () => void
-  children: ReactNode
 }) {
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-semibold">{title}</h3>
-        <Button type="button" onClick={onCreate}>
-          <Plus />
-          {createLabel}
-        </Button>
-      </div>
-      {children}
-    </section>
+    <div className="flex justify-end">
+      <Button type="button" onClick={onCreate}>
+        <Plus />
+        {createLabel}
+      </Button>
+    </div>
   )
 }
 
@@ -65,11 +57,13 @@ export function CatalogTable({
   columns,
   isEmpty,
   isLoading,
+  emptyMessage = 'موردی ثبت نشده است.',
   children,
 }: {
   columns: string[]
   isEmpty: boolean
   isLoading: boolean
+  emptyMessage?: string
   children: ReactNode
 }) {
   if (isLoading) {
@@ -94,7 +88,7 @@ export function CatalogTable({
                     colSpan={columns.length}
                     className="text-muted-foreground h-24 text-center"
                   >
-                    موردی ثبت نشده است.
+                    {emptyMessage}
                   </TableCell>
                 </TableRow>
               )

@@ -19,11 +19,17 @@ import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard/admin/index'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard/admin/users'
 import { Route as DashboardAdminPaymentsRouteImport } from './routes/dashboard/admin/payments'
-import { Route as DashboardAdminCatalogRouteImport } from './routes/dashboard/admin/catalog'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardAdminCatalogRouteRouteImport } from './routes/dashboard/admin/catalog/route'
 import { Route as DashboardAdminProductsIndexRouteImport } from './routes/dashboard/admin/products/index'
+import { Route as DashboardAdminCatalogIndexRouteImport } from './routes/dashboard/admin/catalog/index'
 import { Route as DashboardAdminProductsNewRouteImport } from './routes/dashboard/admin/products/new'
+import { Route as DashboardAdminCatalogTagsRouteImport } from './routes/dashboard/admin/catalog/tags'
+import { Route as DashboardAdminCatalogCollectionsRouteImport } from './routes/dashboard/admin/catalog/collections'
+import { Route as DashboardAdminCatalogCategoriesRouteImport } from './routes/dashboard/admin/catalog/categories'
+import { Route as DashboardAdminCatalogBrandsRouteImport } from './routes/dashboard/admin/catalog/brands'
+import { Route as DashboardAdminCatalogAttributesRouteImport } from './routes/dashboard/admin/catalog/attributes'
 import { Route as DashboardAdminProductsProductIdEditRouteImport } from './routes/dashboard/admin/products/$productId/edit'
 import { Route as ApiAdminProductsProductIdImagesRouteImport } from './routes/api/admin/products/$productId/images'
 
@@ -77,11 +83,6 @@ const DashboardAdminPaymentsRoute = DashboardAdminPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => DashboardAdminRoute,
 } as any)
-const DashboardAdminCatalogRoute = DashboardAdminCatalogRouteImport.update({
-  id: '/catalog',
-  path: '/catalog',
-  getParentRoute: () => DashboardAdminRoute,
-} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -92,17 +93,59 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardAdminCatalogRouteRoute =
+  DashboardAdminCatalogRouteRouteImport.update({
+    id: '/catalog',
+    path: '/catalog',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
 const DashboardAdminProductsIndexRoute =
   DashboardAdminProductsIndexRouteImport.update({
     id: '/products/',
     path: '/products/',
     getParentRoute: () => DashboardAdminRoute,
   } as any)
+const DashboardAdminCatalogIndexRoute =
+  DashboardAdminCatalogIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardAdminCatalogRouteRoute,
+  } as any)
 const DashboardAdminProductsNewRoute =
   DashboardAdminProductsNewRouteImport.update({
     id: '/products/new',
     path: '/products/new',
     getParentRoute: () => DashboardAdminRoute,
+  } as any)
+const DashboardAdminCatalogTagsRoute =
+  DashboardAdminCatalogTagsRouteImport.update({
+    id: '/tags',
+    path: '/tags',
+    getParentRoute: () => DashboardAdminCatalogRouteRoute,
+  } as any)
+const DashboardAdminCatalogCollectionsRoute =
+  DashboardAdminCatalogCollectionsRouteImport.update({
+    id: '/collections',
+    path: '/collections',
+    getParentRoute: () => DashboardAdminCatalogRouteRoute,
+  } as any)
+const DashboardAdminCatalogCategoriesRoute =
+  DashboardAdminCatalogCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => DashboardAdminCatalogRouteRoute,
+  } as any)
+const DashboardAdminCatalogBrandsRoute =
+  DashboardAdminCatalogBrandsRouteImport.update({
+    id: '/brands',
+    path: '/brands',
+    getParentRoute: () => DashboardAdminCatalogRouteRoute,
+  } as any)
+const DashboardAdminCatalogAttributesRoute =
+  DashboardAdminCatalogAttributesRouteImport.update({
+    id: '/attributes',
+    path: '/attributes',
+    getParentRoute: () => DashboardAdminCatalogRouteRoute,
   } as any)
 const DashboardAdminProductsProductIdEditRoute =
   DashboardAdminProductsProductIdEditRouteImport.update({
@@ -125,13 +168,19 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin': typeof DashboardAdminRouteWithChildren
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
-  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRoute
   '/dashboard/admin/payments': typeof DashboardAdminPaymentsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
+  '/dashboard/admin/catalog/attributes': typeof DashboardAdminCatalogAttributesRoute
+  '/dashboard/admin/catalog/brands': typeof DashboardAdminCatalogBrandsRoute
+  '/dashboard/admin/catalog/categories': typeof DashboardAdminCatalogCategoriesRoute
+  '/dashboard/admin/catalog/collections': typeof DashboardAdminCatalogCollectionsRoute
+  '/dashboard/admin/catalog/tags': typeof DashboardAdminCatalogTagsRoute
   '/dashboard/admin/products/new': typeof DashboardAdminProductsNewRoute
+  '/dashboard/admin/catalog/': typeof DashboardAdminCatalogIndexRoute
   '/dashboard/admin/products/': typeof DashboardAdminProductsIndexRoute
   '/api/admin/products/$productId/images': typeof ApiAdminProductsProductIdImagesRoute
   '/dashboard/admin/products/$productId/edit': typeof DashboardAdminProductsProductIdEditRoute
@@ -144,11 +193,16 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
-  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRoute
   '/dashboard/admin/payments': typeof DashboardAdminPaymentsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin': typeof DashboardAdminIndexRoute
+  '/dashboard/admin/catalog/attributes': typeof DashboardAdminCatalogAttributesRoute
+  '/dashboard/admin/catalog/brands': typeof DashboardAdminCatalogBrandsRoute
+  '/dashboard/admin/catalog/categories': typeof DashboardAdminCatalogCategoriesRoute
+  '/dashboard/admin/catalog/collections': typeof DashboardAdminCatalogCollectionsRoute
+  '/dashboard/admin/catalog/tags': typeof DashboardAdminCatalogTagsRoute
   '/dashboard/admin/products/new': typeof DashboardAdminProductsNewRoute
+  '/dashboard/admin/catalog': typeof DashboardAdminCatalogIndexRoute
   '/dashboard/admin/products': typeof DashboardAdminProductsIndexRoute
   '/api/admin/products/$productId/images': typeof ApiAdminProductsProductIdImagesRoute
   '/dashboard/admin/products/$productId/edit': typeof DashboardAdminProductsProductIdEditRoute
@@ -162,13 +216,19 @@ export interface FileRoutesById {
   '/dashboard/admin': typeof DashboardAdminRouteWithChildren
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
-  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRoute
   '/dashboard/admin/payments': typeof DashboardAdminPaymentsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
+  '/dashboard/admin/catalog/attributes': typeof DashboardAdminCatalogAttributesRoute
+  '/dashboard/admin/catalog/brands': typeof DashboardAdminCatalogBrandsRoute
+  '/dashboard/admin/catalog/categories': typeof DashboardAdminCatalogCategoriesRoute
+  '/dashboard/admin/catalog/collections': typeof DashboardAdminCatalogCollectionsRoute
+  '/dashboard/admin/catalog/tags': typeof DashboardAdminCatalogTagsRoute
   '/dashboard/admin/products/new': typeof DashboardAdminProductsNewRoute
+  '/dashboard/admin/catalog/': typeof DashboardAdminCatalogIndexRoute
   '/dashboard/admin/products/': typeof DashboardAdminProductsIndexRoute
   '/api/admin/products/$productId/images': typeof ApiAdminProductsProductIdImagesRoute
   '/dashboard/admin/products/$productId/edit': typeof DashboardAdminProductsProductIdEditRoute
@@ -183,13 +243,19 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/profile'
     | '/dashboard/'
+    | '/dashboard/admin/catalog'
     | '/api/auth/$'
     | '/api/rpc/$'
-    | '/dashboard/admin/catalog'
     | '/dashboard/admin/payments'
     | '/dashboard/admin/users'
     | '/dashboard/admin/'
+    | '/dashboard/admin/catalog/attributes'
+    | '/dashboard/admin/catalog/brands'
+    | '/dashboard/admin/catalog/categories'
+    | '/dashboard/admin/catalog/collections'
+    | '/dashboard/admin/catalog/tags'
     | '/dashboard/admin/products/new'
+    | '/dashboard/admin/catalog/'
     | '/dashboard/admin/products/'
     | '/api/admin/products/$productId/images'
     | '/dashboard/admin/products/$productId/edit'
@@ -202,11 +268,16 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/api/auth/$'
     | '/api/rpc/$'
-    | '/dashboard/admin/catalog'
     | '/dashboard/admin/payments'
     | '/dashboard/admin/users'
     | '/dashboard/admin'
+    | '/dashboard/admin/catalog/attributes'
+    | '/dashboard/admin/catalog/brands'
+    | '/dashboard/admin/catalog/categories'
+    | '/dashboard/admin/catalog/collections'
+    | '/dashboard/admin/catalog/tags'
     | '/dashboard/admin/products/new'
+    | '/dashboard/admin/catalog'
     | '/dashboard/admin/products'
     | '/api/admin/products/$productId/images'
     | '/dashboard/admin/products/$productId/edit'
@@ -219,13 +290,19 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/profile'
     | '/dashboard/'
+    | '/dashboard/admin/catalog'
     | '/api/auth/$'
     | '/api/rpc/$'
-    | '/dashboard/admin/catalog'
     | '/dashboard/admin/payments'
     | '/dashboard/admin/users'
     | '/dashboard/admin/'
+    | '/dashboard/admin/catalog/attributes'
+    | '/dashboard/admin/catalog/brands'
+    | '/dashboard/admin/catalog/categories'
+    | '/dashboard/admin/catalog/collections'
+    | '/dashboard/admin/catalog/tags'
     | '/dashboard/admin/products/new'
+    | '/dashboard/admin/catalog/'
     | '/dashboard/admin/products/'
     | '/api/admin/products/$productId/images'
     | '/dashboard/admin/products/$productId/edit'
@@ -313,13 +390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminPaymentsRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
-    '/dashboard/admin/catalog': {
-      id: '/dashboard/admin/catalog'
-      path: '/catalog'
-      fullPath: '/dashboard/admin/catalog'
-      preLoaderRoute: typeof DashboardAdminCatalogRouteImport
-      parentRoute: typeof DashboardAdminRoute
-    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -334,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/admin/catalog': {
+      id: '/dashboard/admin/catalog'
+      path: '/catalog'
+      fullPath: '/dashboard/admin/catalog'
+      preLoaderRoute: typeof DashboardAdminCatalogRouteRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
     '/dashboard/admin/products/': {
       id: '/dashboard/admin/products/'
       path: '/products'
@@ -341,12 +418,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminProductsIndexRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/dashboard/admin/catalog/': {
+      id: '/dashboard/admin/catalog/'
+      path: '/'
+      fullPath: '/dashboard/admin/catalog/'
+      preLoaderRoute: typeof DashboardAdminCatalogIndexRouteImport
+      parentRoute: typeof DashboardAdminCatalogRouteRoute
+    }
     '/dashboard/admin/products/new': {
       id: '/dashboard/admin/products/new'
       path: '/products/new'
       fullPath: '/dashboard/admin/products/new'
       preLoaderRoute: typeof DashboardAdminProductsNewRouteImport
       parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/catalog/tags': {
+      id: '/dashboard/admin/catalog/tags'
+      path: '/tags'
+      fullPath: '/dashboard/admin/catalog/tags'
+      preLoaderRoute: typeof DashboardAdminCatalogTagsRouteImport
+      parentRoute: typeof DashboardAdminCatalogRouteRoute
+    }
+    '/dashboard/admin/catalog/collections': {
+      id: '/dashboard/admin/catalog/collections'
+      path: '/collections'
+      fullPath: '/dashboard/admin/catalog/collections'
+      preLoaderRoute: typeof DashboardAdminCatalogCollectionsRouteImport
+      parentRoute: typeof DashboardAdminCatalogRouteRoute
+    }
+    '/dashboard/admin/catalog/categories': {
+      id: '/dashboard/admin/catalog/categories'
+      path: '/categories'
+      fullPath: '/dashboard/admin/catalog/categories'
+      preLoaderRoute: typeof DashboardAdminCatalogCategoriesRouteImport
+      parentRoute: typeof DashboardAdminCatalogRouteRoute
+    }
+    '/dashboard/admin/catalog/brands': {
+      id: '/dashboard/admin/catalog/brands'
+      path: '/brands'
+      fullPath: '/dashboard/admin/catalog/brands'
+      preLoaderRoute: typeof DashboardAdminCatalogBrandsRouteImport
+      parentRoute: typeof DashboardAdminCatalogRouteRoute
+    }
+    '/dashboard/admin/catalog/attributes': {
+      id: '/dashboard/admin/catalog/attributes'
+      path: '/attributes'
+      fullPath: '/dashboard/admin/catalog/attributes'
+      preLoaderRoute: typeof DashboardAdminCatalogAttributesRouteImport
+      parentRoute: typeof DashboardAdminCatalogRouteRoute
     }
     '/dashboard/admin/products/$productId/edit': {
       id: '/dashboard/admin/products/$productId/edit'
@@ -365,8 +484,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardAdminCatalogRouteRouteChildren {
+  DashboardAdminCatalogAttributesRoute: typeof DashboardAdminCatalogAttributesRoute
+  DashboardAdminCatalogBrandsRoute: typeof DashboardAdminCatalogBrandsRoute
+  DashboardAdminCatalogCategoriesRoute: typeof DashboardAdminCatalogCategoriesRoute
+  DashboardAdminCatalogCollectionsRoute: typeof DashboardAdminCatalogCollectionsRoute
+  DashboardAdminCatalogTagsRoute: typeof DashboardAdminCatalogTagsRoute
+  DashboardAdminCatalogIndexRoute: typeof DashboardAdminCatalogIndexRoute
+}
+
+const DashboardAdminCatalogRouteRouteChildren: DashboardAdminCatalogRouteRouteChildren =
+  {
+    DashboardAdminCatalogAttributesRoute: DashboardAdminCatalogAttributesRoute,
+    DashboardAdminCatalogBrandsRoute: DashboardAdminCatalogBrandsRoute,
+    DashboardAdminCatalogCategoriesRoute: DashboardAdminCatalogCategoriesRoute,
+    DashboardAdminCatalogCollectionsRoute:
+      DashboardAdminCatalogCollectionsRoute,
+    DashboardAdminCatalogTagsRoute: DashboardAdminCatalogTagsRoute,
+    DashboardAdminCatalogIndexRoute: DashboardAdminCatalogIndexRoute,
+  }
+
+const DashboardAdminCatalogRouteRouteWithChildren =
+  DashboardAdminCatalogRouteRoute._addFileChildren(
+    DashboardAdminCatalogRouteRouteChildren,
+  )
+
 interface DashboardAdminRouteChildren {
-  DashboardAdminCatalogRoute: typeof DashboardAdminCatalogRoute
+  DashboardAdminCatalogRouteRoute: typeof DashboardAdminCatalogRouteRouteWithChildren
   DashboardAdminPaymentsRoute: typeof DashboardAdminPaymentsRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
   DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
@@ -376,7 +520,7 @@ interface DashboardAdminRouteChildren {
 }
 
 const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
-  DashboardAdminCatalogRoute: DashboardAdminCatalogRoute,
+  DashboardAdminCatalogRouteRoute: DashboardAdminCatalogRouteRouteWithChildren,
   DashboardAdminPaymentsRoute: DashboardAdminPaymentsRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
   DashboardAdminIndexRoute: DashboardAdminIndexRoute,

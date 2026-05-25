@@ -16,8 +16,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '#/components/ui/sidebar'
+import {
+  adminCatalogNavItems,
+  isAdminCatalogNavActive,
+} from '#/lib/admin-catalog-nav'
 import { adminNavItems, isAdminNavActive } from '#/lib/admin-nav'
 import { authClient } from '#/lib/auth-client'
 import { hasMinRole } from '#/lib/roles'
@@ -123,6 +129,33 @@ export function AppSidebar({ session }: AppSidebarProps) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip="کاتالوگ"
+                    isActive={pathname.startsWith('/dashboard/admin/catalog')}
+                  >
+                    <Link to="/dashboard/admin/catalog/categories">
+                      {/* <adminCatalogNavItems[0]!.icon /> */}
+                      <span>کاتالوگ</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  <SidebarMenuSub>
+                    {adminCatalogNavItems.map(item => (
+                      <SidebarMenuSubItem key={item.to}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isAdminCatalogNavActive(pathname, item)}
+                        >
+                          <Link to={item.to}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

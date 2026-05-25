@@ -6,13 +6,6 @@ import type {
   AdminTag,
 } from '#/orpc/schemas/admin/catalog'
 
-export type CatalogSection
-  = | 'categories'
-    | 'brands'
-    | 'attributes'
-    | 'collections'
-    | 'tags'
-
 export type CatalogEntity
   = | AdminBrand
     | AdminCategory

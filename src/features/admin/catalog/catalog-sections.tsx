@@ -12,9 +12,16 @@ import type {
   CollectionFormValue,
   TagFormValue,
 } from './catalog-types'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+
+import { useCatalogSearch } from '#/components/admin/catalog/catalog-search-context'
 
 import { Button } from '#/components/ui/button'
 import {
@@ -46,7 +53,7 @@ import {
   tagToForm,
 } from './catalog-forms'
 import {
-  CatalogPanel,
+  CatalogSectionActions,
   DeleteCatalogDialog,
 } from './catalog-shared'
 import {
@@ -57,8 +64,25 @@ import {
   TagsTable,
 } from './catalog-tables'
 
-interface SectionProps {
-  search: string
+const searchEmptyMessage = 'موردی با این جستجو پیدا نشد.'
+const defaultEmptyMessage = 'موردی ثبت نشده است.'
+
+function useCatalogListQuery<T extends Array<unknown>>(
+  data: T | undefined,
+  isPending: boolean,
+) {
+  const { debouncedSearch, isSearchActive, setResultCount } = useCatalogSearch()
+
+  useEffect(() => {
+    if (!isPending) {
+      setResultCount(data?.length ?? 0)
+    }
+  }, [data?.length, isPending, setResultCount])
+
+  return {
+    debouncedSearch,
+    emptyMessage: isSearchActive ? searchEmptyMessage : defaultEmptyMessage,
+  }
 }
 
 function optionalText(value: string) {
@@ -78,16 +102,21 @@ function attributeValuesFromText(valuesText: string) {
     }))
 }
 
-export function BrandsSection({ search }: SectionProps) {
+export function BrandsSection() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<BrandFormValue>(emptyBrandForm)
   const [editing, setEditing] = useState<AdminBrand | null>(null)
   const [deleting, setDeleting] = useState<AdminBrand | null>(null)
   const [open, setOpen] = useState(false)
 
-  const query = useQuery(orpc.admin.catalog.listBrands.queryOptions({
-    input: { search: search || undefined },
-  }))
+  const { debouncedSearch } = useCatalogSearch()
+  const query = useQuery({
+    ...orpc.admin.catalog.listBrands.queryOptions({
+      input: { search: debouncedSearch || undefined },
+    }),
+    placeholderData: keepPreviousData,
+  })
+  const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
 
   const invalidate = () => queryClient.invalidateQueries({
     queryKey: orpc.admin.catalog.listBrands.key(),
@@ -148,18 +177,19 @@ export function BrandsSection({ search }: SectionProps) {
   }
 
   return (
-    <CatalogPanel
-      title="برندها"
-      createLabel="برند جدید"
-      onCreate={() => {
-        setEditing(null)
-        setForm(emptyBrandForm)
-        setOpen(true)
-      }}
-    >
+    <div className="flex flex-col gap-4">
+      <CatalogSectionActions
+        createLabel="برند جدید"
+        onCreate={() => {
+          setEditing(null)
+          setForm(emptyBrandForm)
+          setOpen(true)
+        }}
+      />
       <BrandsTable
         items={query.data ?? []}
         isLoading={query.isPending}
+        emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
           setForm(brandToForm(item))
@@ -198,24 +228,38 @@ export function BrandsSection({ search }: SectionProps) {
         onOpenChange={open => !open && setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate({ id: deleting.id })}
       />
-    </CatalogPanel>
+    </div>
   )
 }
 
-export function CategoriesSection({ search }: SectionProps) {
+export function CategoriesSection() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<CategoryFormValue>(emptyCategoryForm)
   const [editing, setEditing] = useState<AdminCategory | null>(null)
   const [deleting, setDeleting] = useState<AdminCategory | null>(null)
   const [open, setOpen] = useState(false)
 
-  const query = useQuery(orpc.admin.catalog.listCategories.queryOptions({
-    input: { search: search || undefined },
-  }))
+  const { debouncedSearch } = useCatalogSearch()
+  const query = useQuery({
+    ...orpc.admin.catalog.listCategories.queryOptions({
+      input: { search: debouncedSearch || undefined },
+    }),
+    placeholderData: keepPreviousData,
+  })
+  const allCategoriesQuery = useQuery(
+    orpc.admin.catalog.listCategories.queryOptions({ input: {} }),
+  )
   const categories = query.data ?? []
+  const { emptyMessage } = useCatalogListQuery(categories, query.isPending)
+  const parentById = useMemo(
+    () => new Map((allCategoriesQuery.data ?? []).map(category => [category.id, category])),
+    [allCategoriesQuery.data],
+  )
   const parentOptions = useMemo(
-    () => categories.filter(category => category.id !== editing?.id),
-    [categories, editing?.id],
+    () => (allCategoriesQuery.data ?? []).filter(
+      category => category.id !== editing?.id,
+    ),
+    [allCategoriesQuery.data, editing?.id],
   )
 
   const invalidate = () => queryClient.invalidateQueries({
@@ -277,18 +321,20 @@ export function CategoriesSection({ search }: SectionProps) {
   }
 
   return (
-    <CatalogPanel
-      title="دسته‌بندی‌ها"
-      createLabel="دسته‌بندی جدید"
-      onCreate={() => {
-        setEditing(null)
-        setForm(emptyCategoryForm)
-        setOpen(true)
-      }}
-    >
+    <div className="flex flex-col gap-4">
+      <CatalogSectionActions
+        createLabel="دسته‌بندی جدید"
+        onCreate={() => {
+          setEditing(null)
+          setForm(emptyCategoryForm)
+          setOpen(true)
+        }}
+      />
       <CategoriesTable
         items={categories}
+        parentById={parentById}
         isLoading={query.isPending}
+        emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
           setForm(categoryToForm(item))
@@ -328,20 +374,25 @@ export function CategoriesSection({ search }: SectionProps) {
         onOpenChange={open => !open && setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate({ id: deleting.id })}
       />
-    </CatalogPanel>
+    </div>
   )
 }
 
-export function AttributesSection({ search }: SectionProps) {
+export function AttributesSection() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<AttributeFormValue>(emptyAttributeForm)
   const [editing, setEditing] = useState<AdminAttribute | null>(null)
   const [deleting, setDeleting] = useState<AdminAttribute | null>(null)
   const [open, setOpen] = useState(false)
 
-  const query = useQuery(orpc.admin.catalog.listAttributes.queryOptions({
-    input: { search: search || undefined },
-  }))
+  const { debouncedSearch } = useCatalogSearch()
+  const query = useQuery({
+    ...orpc.admin.catalog.listAttributes.queryOptions({
+      input: { search: debouncedSearch || undefined },
+    }),
+    placeholderData: keepPreviousData,
+  })
+  const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
   const invalidate = () => queryClient.invalidateQueries({
     queryKey: orpc.admin.catalog.listAttributes.key(),
   })
@@ -404,18 +455,19 @@ export function AttributesSection({ search }: SectionProps) {
   }
 
   return (
-    <CatalogPanel
-      title="ویژگی‌ها"
-      createLabel="ویژگی جدید"
-      onCreate={() => {
-        setEditing(null)
-        setForm(emptyAttributeForm)
-        setOpen(true)
-      }}
-    >
+    <div className="flex flex-col gap-4">
+      <CatalogSectionActions
+        createLabel="ویژگی جدید"
+        onCreate={() => {
+          setEditing(null)
+          setForm(emptyAttributeForm)
+          setOpen(true)
+        }}
+      />
       <AttributesTable
         items={query.data ?? []}
         isLoading={query.isPending}
+        emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
           setForm(attributeToForm(item))
@@ -454,20 +506,25 @@ export function AttributesSection({ search }: SectionProps) {
         onOpenChange={open => !open && setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate({ id: deleting.id })}
       />
-    </CatalogPanel>
+    </div>
   )
 }
 
-export function CollectionsSection({ search }: SectionProps) {
+export function CollectionsSection() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<CollectionFormValue>(emptyCollectionForm)
   const [editing, setEditing] = useState<AdminCollection | null>(null)
   const [deleting, setDeleting] = useState<AdminCollection | null>(null)
   const [open, setOpen] = useState(false)
 
-  const query = useQuery(orpc.admin.catalog.listCollections.queryOptions({
-    input: { search: search || undefined },
-  }))
+  const { debouncedSearch } = useCatalogSearch()
+  const query = useQuery({
+    ...orpc.admin.catalog.listCollections.queryOptions({
+      input: { search: debouncedSearch || undefined },
+    }),
+    placeholderData: keepPreviousData,
+  })
+  const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
   const invalidate = () => queryClient.invalidateQueries({
     queryKey: orpc.admin.catalog.listCollections.key(),
   })
@@ -526,18 +583,19 @@ export function CollectionsSection({ search }: SectionProps) {
   }
 
   return (
-    <CatalogPanel
-      title="کالکشن‌ها"
-      createLabel="کالکشن جدید"
-      onCreate={() => {
-        setEditing(null)
-        setForm(emptyCollectionForm)
-        setOpen(true)
-      }}
-    >
+    <div className="flex flex-col gap-4">
+      <CatalogSectionActions
+        createLabel="کالکشن جدید"
+        onCreate={() => {
+          setEditing(null)
+          setForm(emptyCollectionForm)
+          setOpen(true)
+        }}
+      />
       <CollectionsTable
         items={query.data ?? []}
         isLoading={query.isPending}
+        emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
           setForm(collectionToForm(item))
@@ -576,20 +634,25 @@ export function CollectionsSection({ search }: SectionProps) {
         onOpenChange={open => !open && setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate({ id: deleting.id })}
       />
-    </CatalogPanel>
+    </div>
   )
 }
 
-export function TagsSection({ search }: SectionProps) {
+export function TagsSection() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState<TagFormValue>(emptyTagForm)
   const [editing, setEditing] = useState<AdminTag | null>(null)
   const [deleting, setDeleting] = useState<AdminTag | null>(null)
   const [open, setOpen] = useState(false)
 
-  const query = useQuery(orpc.admin.catalog.listTags.queryOptions({
-    input: { search: search || undefined },
-  }))
+  const { debouncedSearch } = useCatalogSearch()
+  const query = useQuery({
+    ...orpc.admin.catalog.listTags.queryOptions({
+      input: { search: debouncedSearch || undefined },
+    }),
+    placeholderData: keepPreviousData,
+  })
+  const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
   const invalidate = () => queryClient.invalidateQueries({
     queryKey: orpc.admin.catalog.listTags.key(),
   })
@@ -648,18 +711,19 @@ export function TagsSection({ search }: SectionProps) {
   }
 
   return (
-    <CatalogPanel
-      title="تگ‌ها و لیبل‌ها"
-      createLabel="تگ جدید"
-      onCreate={() => {
-        setEditing(null)
-        setForm(emptyTagForm)
-        setOpen(true)
-      }}
-    >
+    <div className="flex flex-col gap-4">
+      <CatalogSectionActions
+        createLabel="تگ جدید"
+        onCreate={() => {
+          setEditing(null)
+          setForm(emptyTagForm)
+          setOpen(true)
+        }}
+      />
       <TagsTable
         items={query.data ?? []}
         isLoading={query.isPending}
+        emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
           setForm(tagToForm(item))
@@ -698,7 +762,7 @@ export function TagsSection({ search }: SectionProps) {
         onOpenChange={open => !open && setDeleting(null)}
         onConfirm={() => deleting && deleteMutation.mutate({ id: deleting.id })}
       />
-    </CatalogPanel>
+    </div>
   )
 }
 

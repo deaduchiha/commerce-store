@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { FileRouteTypes } from '#/routeTree.gen'
 import {
-  Boxes,
   CreditCard,
   LayoutDashboard,
   Package,
@@ -53,12 +52,6 @@ export const adminNavItems: AdminNavItem[] = [
     title: 'محصولات',
     to: '/dashboard/admin/products',
     icon: Package,
-    matchPrefix: true,
-  },
-  {
-    title: 'کاتالوگ',
-    to: '/dashboard/admin/catalog',
-    icon: Boxes,
     matchPrefix: true,
   },
 ]
