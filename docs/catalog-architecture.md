@@ -90,7 +90,6 @@ Product APIs stay under `admin.products` and carry normalized catalog fields:
 
 The legacy fields remain available during migration:
 
-- `products.brand`
 - `product_images.path`
 - `product_variants.size`
 - `product_variants.color`

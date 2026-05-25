@@ -348,8 +348,6 @@ export const products = sqliteTable(
     brandId: text('brand_id').references(() => brands.id, {
       onDelete: 'set null',
     }),
-    /** Legacy denormalized brand label kept while existing admin/product APIs migrate. */
-    brand: text('brand'),
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),
     metaKeywords: text('meta_keywords'),

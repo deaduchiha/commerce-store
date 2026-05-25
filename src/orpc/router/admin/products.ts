@@ -1,24 +1,25 @@
 import type { z } from 'zod'
 import type { OrpcContext } from '#/orpc/context'
 import { ORPCError, os } from '@orpc/server'
-import { and, asc, count, desc, eq, like, notInArray, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists, like, notInArray, or } from 'drizzle-orm'
 
 import { db } from '#/db'
 import {
   attributes,
   attributeValues,
+  brands,
+  collectionProducts,
   productAttributeValues,
   productCategories,
   productImages,
   products,
   productTags,
   productVariants,
-  collectionProducts,
   variantAttributeValues,
 } from '#/db/schema'
 import { slugify } from '#/lib/slug'
-import { variantLegacyFieldForAttribute } from '#/lib/variant-option-attributes'
 import { deleteProductImageFile } from '#/lib/uploads/product-images'
+import { variantLegacyFieldForAttribute } from '#/lib/variant-option-attributes'
 import { requireAdmin } from '#/orpc/lib/require-admin'
 import {
   adminProductDetailSchema,
@@ -132,7 +133,6 @@ async function loadProductDetail(productId: string) {
     shortDescription: row.shortDescription ?? null,
     description: row.description ?? null,
     brandId: row.brandId ?? null,
-    brand: row.brand ?? null,
     categoryIds: categories.map(category => category.categoryId),
     tagIds: productTagRows.map(tag => tag.tagId),
     collectionIds: productCollectionRows.map(
@@ -340,8 +340,6 @@ function productPatchFromInput(
       input.description !== undefined
         ? emptyToNull(input.description)
         : existing?.description,
-    brand:
-      input.brand !== undefined ? emptyToNull(input.brand) : existing?.brand,
     metaTitle:
       input.metaTitle !== undefined
         ? emptyToNull(input.metaTitle)
@@ -372,7 +370,17 @@ export const list = os
       ? or(
           like(products.name, `%${search}%`),
           like(products.slug, `%${search}%`),
-          like(products.brand, `%${search}%`),
+          exists(
+            db
+              .select({ id: brands.id })
+              .from(brands)
+              .where(
+                and(
+                  eq(brands.id, products.brandId),
+                  like(brands.name, `%${search}%`),
+                ),
+              ),
+          ),
         )
       : undefined
 
@@ -406,6 +414,16 @@ export const list = os
           .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt))
           .limit(1)
 
+        let brandName: string | null = null
+        if (row.brandId) {
+          const [brandRow] = await db
+            .select({ name: brands.name })
+            .from(brands)
+            .where(eq(brands.id, row.brandId))
+            .limit(1)
+          brandName = brandRow?.name ?? null
+        }
+
         return adminProductListItemSchema.parse({
           id: row.id,
           productType: row.productType,
@@ -413,7 +431,7 @@ export const list = os
           name: row.name,
           slug: row.slug,
           brandId: row.brandId ?? null,
-          brand: row.brand ?? null,
+          brandName,
           requiresShipping: row.requiresShipping,
           isDigital: row.isDigital,
           isActive: row.isActive,
@@ -469,7 +487,6 @@ export const create = os
         brandId: patch.brandId ?? null,
         shortDescription: patch.shortDescription ?? null,
         description: patch.description ?? null,
-        brand: patch.brand ?? null,
         metaTitle: patch.metaTitle ?? null,
         metaDescription: patch.metaDescription ?? null,
         metaKeywords: patch.metaKeywords ?? null,
@@ -525,7 +542,6 @@ export const update = os
         brandId: patch.brandId,
         shortDescription: patch.shortDescription,
         description: patch.description,
-        brand: patch.brand,
         metaTitle: patch.metaTitle,
         metaDescription: patch.metaDescription,
         metaKeywords: patch.metaKeywords,

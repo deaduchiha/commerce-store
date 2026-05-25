@@ -90,7 +90,6 @@ function toFormValues(product?: AdminProductDetail) {
     productType: product?.productType ?? 'simple',
     status: product?.status ?? 'active',
     brandId: product?.brandId ?? 'none',
-    brand: product?.brand ?? '',
     categoryIds: product?.categoryIds ?? [],
     tagIds: product?.tagIds ?? [],
     collectionIds: product?.collectionIds ?? [],
@@ -118,7 +117,6 @@ function toPayload(value: ReturnType<typeof toFormValues>) {
     name: value.name,
     slug: optionalText(value.slug),
     brandId: value.brandId === 'none' ? '' : value.brandId,
-    brand: optionalText(value.brand),
     categoryIds: value.categoryIds,
     tagIds: value.tagIds,
     collectionIds: value.collectionIds,
@@ -629,16 +627,6 @@ function ProductEditorForm({
                 <ProductBrandIdField
                   field={field}
                   brandOptions={brandOptions}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="brand">
-              {field => (
-                <ProductTextField
-                  field={field}
-                  label="نام برند نمایشی"
-                  description="برای سازگاری با محصولات قدیمی یا برند آزاد."
                 />
               )}
             </form.Field>

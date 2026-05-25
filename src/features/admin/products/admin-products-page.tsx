@@ -136,9 +136,9 @@ export function AdminProductsPage() {
         ),
       },
       {
-        accessorKey: 'brand',
+        accessorKey: 'brandName',
         header: 'برند',
-        cell: ({ row }) => row.original.brand ?? '-',
+        cell: ({ row }) => row.original.brandName ?? '-',
       },
       {
         accessorKey: 'variantCount',

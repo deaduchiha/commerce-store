@@ -18,8 +18,8 @@ import {
   categoryClosure,
   productCategories,
   productImages,
-  productTags,
   products,
+  productTags,
   productVariants,
 } from '#/db/schema'
 import {
@@ -44,7 +44,17 @@ export const list = os
         or(
           like(products.name, `%${search}%`),
           like(products.slug, `%${search}%`),
-          like(products.brand, `%${search}%`),
+          exists(
+            db
+              .select({ id: brands.id })
+              .from(brands)
+              .where(
+                and(
+                  eq(brands.id, products.brandId),
+                  like(brands.name, `%${search}%`),
+                ),
+              ),
+          ),
         )!,
       )
     }
@@ -128,14 +138,14 @@ export const list = os
             ),
           )
 
-        let brandLabel = row.brand ?? null
+        let brandLabel: string | null = null
         if (row.brandId) {
           const [brandRow] = await db
             .select({ name: brands.name })
             .from(brands)
             .where(eq(brands.id, row.brandId))
             .limit(1)
-          brandLabel = brandRow?.name ?? brandLabel
+          brandLabel = brandRow?.name ?? null
         }
 
         return storefrontProductListItemSchema.parse({
