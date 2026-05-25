@@ -22,6 +22,13 @@
       "when": 1779118928085,
       "tag": "0002_tough_warhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779695533657,
+      "tag": "0003_giant_ted_forrester",
+      "breakpoints": true
     }
   ]
 }

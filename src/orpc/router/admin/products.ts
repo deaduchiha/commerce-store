@@ -93,14 +93,19 @@ async function loadProductDetail(productId: string) {
 
   return adminProductDetailSchema.parse({
     id: row.id,
+    productType: row.productType,
+    status: row.status,
     name: row.name,
     slug: row.slug,
     shortDescription: row.shortDescription ?? null,
     description: row.description ?? null,
+    brandId: row.brandId ?? null,
     brand: row.brand ?? null,
     metaTitle: row.metaTitle ?? null,
     metaDescription: row.metaDescription ?? null,
     metaKeywords: row.metaKeywords ?? null,
+    requiresShipping: row.requiresShipping,
+    isDigital: row.isDigital,
     isActive: row.isActive,
     images: images.map(toProductImage),
     variants: variants.map(toProductVariant),
@@ -114,7 +119,11 @@ function productPatchFromInput(
   existing?: typeof products.$inferSelect,
 ) {
   return {
+    productType: input.productType ?? existing?.productType ?? 'simple',
+    status: input.status ?? existing?.status ?? 'active',
     name: input.name ?? existing?.name,
+    brandId:
+      input.brandId !== undefined ? emptyToNull(input.brandId) : existing?.brandId,
     shortDescription:
       input.shortDescription !== undefined
         ? emptyToNull(input.shortDescription)
@@ -137,6 +146,9 @@ function productPatchFromInput(
       input.metaKeywords !== undefined
         ? emptyToNull(input.metaKeywords)
         : existing?.metaKeywords,
+    requiresShipping:
+      input.requiresShipping ?? existing?.requiresShipping ?? true,
+    isDigital: input.isDigital ?? existing?.isDigital ?? false,
     isActive: input.isActive ?? existing?.isActive ?? true,
   }
 }
@@ -188,9 +200,14 @@ export const list = os
 
         return adminProductListItemSchema.parse({
           id: row.id,
+          productType: row.productType,
+          status: row.status,
           name: row.name,
           slug: row.slug,
+          brandId: row.brandId ?? null,
           brand: row.brand ?? null,
+          requiresShipping: row.requiresShipping,
+          isDigital: row.isDigital,
           isActive: row.isActive,
           variantCount: variantResult?.value ?? 0,
           imagePath: cover?.path ?? null,
@@ -237,14 +254,19 @@ export const create = os
     const [row] = await db
       .insert(products)
       .values({
+        productType: patch.productType,
+        status: patch.status,
         name: input.name,
         slug,
+        brandId: patch.brandId ?? null,
         shortDescription: patch.shortDescription ?? null,
         description: patch.description ?? null,
         brand: patch.brand ?? null,
         metaTitle: patch.metaTitle ?? null,
         metaDescription: patch.metaDescription ?? null,
         metaKeywords: patch.metaKeywords ?? null,
+        requiresShipping: patch.requiresShipping ?? true,
+        isDigital: patch.isDigital ?? false,
         isActive: patch.isActive ?? true,
       })
       .returning()
@@ -283,14 +305,19 @@ export const update = os
     await db
       .update(products)
       .set({
+        productType: patch.productType,
+        status: patch.status,
         name: input.data.name ?? existing.name,
         slug,
+        brandId: patch.brandId,
         shortDescription: patch.shortDescription,
         description: patch.description,
         brand: patch.brand,
         metaTitle: patch.metaTitle,
         metaDescription: patch.metaDescription,
         metaKeywords: patch.metaKeywords,
+        requiresShipping: patch.requiresShipping,
+        isDigital: patch.isDigital,
         isActive: patch.isActive,
       })
       .where(eq(products.id, input.id))

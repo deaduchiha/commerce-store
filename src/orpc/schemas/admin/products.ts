@@ -23,9 +23,14 @@ export const adminProductVariantSchema = z.object({
 
 export const adminProductListItemSchema = z.object({
   id: z.string(),
+  productType: z.enum(['simple', 'variable', 'bundle', 'digital', 'subscription', 'service']),
+  status: z.enum(['draft', 'active', 'archived']),
   name: z.string(),
   slug: z.string(),
+  brandId: z.string().nullable(),
   brand: z.string().nullable(),
+  requiresShipping: z.boolean(),
+  isDigital: z.boolean(),
   isActive: z.boolean(),
   variantCount: z.number().int(),
   imagePath: z.string().nullable(),
@@ -49,14 +54,19 @@ export const adminProductListSchema = z.object({
 
 export const adminProductDetailSchema = z.object({
   id: z.string(),
+  productType: z.enum(['simple', 'variable', 'bundle', 'digital', 'subscription', 'service']),
+  status: z.enum(['draft', 'active', 'archived']),
   name: z.string(),
   slug: z.string(),
   shortDescription: z.string().nullable(),
   description: z.string().nullable(),
+  brandId: z.string().nullable(),
   brand: z.string().nullable(),
   metaTitle: z.string().nullable(),
   metaDescription: z.string().nullable(),
   metaKeywords: z.string().nullable(),
+  requiresShipping: z.boolean(),
+  isDigital: z.boolean(),
   isActive: z.boolean(),
   images: z.array(adminProductImageSchema),
   variants: z.array(adminProductVariantSchema),
@@ -114,6 +124,8 @@ export const adminProductFormWithMetaSchema = z.object({
 })
 
 export const adminProductInputSchema = z.object({
+  productType: z.enum(['simple', 'variable', 'bundle', 'digital', 'subscription', 'service']).optional(),
+  status: z.enum(['draft', 'active', 'archived']).optional(),
   name: z.string().trim().min(2).max(120),
   slug: z
     .string()
@@ -122,12 +134,15 @@ export const adminProductInputSchema = z.object({
     .max(120)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .optional(),
+  brandId: z.string().trim().min(1).optional(),
   brand: z.string().trim().max(80).optional(),
   shortDescription: z.string().trim().max(300).optional(),
   description: z.string().trim().max(10000).optional(),
   metaTitle: z.string().trim().max(70).optional(),
   metaDescription: z.string().trim().max(160).optional(),
   metaKeywords: z.string().trim().max(255).optional(),
+  requiresShipping: z.boolean().optional(),
+  isDigital: z.boolean().optional(),
   isActive: z.boolean().optional(),
 })
 
