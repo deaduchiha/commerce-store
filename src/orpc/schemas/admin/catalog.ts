@@ -1,11 +1,51 @@
 import { z } from 'zod'
 
+const catalogNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'نام را وارد کنید.')
+  .max(120, 'نام نباید بیشتر از ۱۲۰ کاراکتر باشد.')
+
+const catalogSlugSchema = z
+  .string()
+  .trim()
+  .min(1, 'اسلاگ را وارد کنید.')
+  .max(120, 'اسلاگ نباید بیشتر از ۱۲۰ کاراکتر باشد.')
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    'اسلاگ باید با حروف انگلیسی کوچک، عدد و خط تیره نوشته شود.',
+  )
+
+const catalogDescriptionSchema = z
+  .string()
+  .trim()
+  .max(2000, 'توضیحات نباید بیشتر از ۲۰۰۰ کاراکتر باشد.')
+
+const catalogWebsiteSchema = z
+  .string()
+  .trim()
+  .max(255, 'آدرس وب‌سایت نباید بیشتر از ۲۵۵ کاراکتر باشد.')
+  .url('آدرس وب‌سایت معتبر نیست.')
+
+const catalogColorSchema = z
+  .string()
+  .trim()
+  .max(20, 'کد رنگ نباید بیشتر از ۲۰ کاراکتر باشد.')
+  .regex(
+    /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i,
+    'رنگ باید به‌صورت HEX معتبر مثل #111827 باشد.',
+  )
+
 export const catalogIdSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().min(1, 'شناسه معتبر نیست.'),
 })
 
 export const catalogListInputSchema = z.object({
-  search: z.string().trim().max(120).optional(),
+  search: z
+    .string()
+    .trim()
+    .max(120, 'عبارت جستجو نباید بیشتر از ۱۲۰ کاراکتر باشد.')
+    .optional(),
 })
 
 export const adminBrandSchema = z.object({
@@ -20,10 +60,10 @@ export const adminBrandSchema = z.object({
 })
 
 export const adminBrandInputSchema = z.object({
-  slug: z.string().trim().min(1).max(120),
-  name: z.string().trim().min(1).max(120),
-  description: z.string().trim().max(2000).optional(),
-  websiteUrl: z.string().trim().max(255).optional(),
+  slug: catalogSlugSchema,
+  name: catalogNameSchema,
+  description: catalogDescriptionSchema.optional(),
+  websiteUrl: catalogWebsiteSchema.optional(),
   isActive: z.boolean().optional(),
 })
 
@@ -41,10 +81,14 @@ export const adminCategorySchema = z.object({
 
 export const adminCategoryInputSchema = z.object({
   parentId: z.string().nullable().optional(),
-  slug: z.string().trim().min(1).max(120),
-  name: z.string().trim().min(1).max(120),
-  description: z.string().trim().max(2000).optional(),
-  sortOrder: z.number().int().min(0).optional(),
+  slug: catalogSlugSchema,
+  name: catalogNameSchema,
+  description: catalogDescriptionSchema.optional(),
+  sortOrder: z
+    .number()
+    .int('ترتیب نمایش باید عدد صحیح باشد.')
+    .min(0, 'ترتیب نمایش نمی‌تواند منفی باشد.')
+    .optional(),
   isActive: z.boolean().optional(),
 })
 
@@ -75,22 +119,51 @@ export const adminAttributeSchema = z.object({
 
 export const adminAttributeValueInputSchema = z.object({
   id: z.string().optional(),
-  value: z.string().trim().min(1).max(120),
-  slug: z.string().trim().max(120).optional(),
-  colorHex: z.string().trim().max(20).optional(),
-  sortOrder: z.number().int().min(0).optional(),
+  value: z
+    .string()
+    .trim()
+    .min(1, 'مقدار ویژگی را وارد کنید.')
+    .max(120, 'مقدار ویژگی نباید بیشتر از ۱۲۰ کاراکتر باشد.'),
+  slug: catalogSlugSchema.optional(),
+  colorHex: catalogColorSchema.optional(),
+  sortOrder: z
+    .number()
+    .int('ترتیب نمایش باید عدد صحیح باشد.')
+    .min(0, 'ترتیب نمایش نمی‌تواند منفی باشد.')
+    .optional(),
 })
 
 export const adminAttributeInputSchema = z.object({
-  code: z.string().trim().min(1).max(80),
-  name: z.string().trim().min(1).max(120),
-  type: z.enum(['text', 'number', 'boolean', 'select', 'multiselect', 'color', 'date']),
-  scope: z.enum(['product', 'variant', 'both']),
-  unit: z.string().trim().max(30).optional(),
+  code: z
+    .string()
+    .trim()
+    .min(1, 'کد ویژگی را وارد کنید.')
+    .max(80, 'کد ویژگی نباید بیشتر از ۸۰ کاراکتر باشد.')
+    .regex(
+      /^[a-z][a-z0-9_]*$/,
+      'کد ویژگی باید با حرف انگلیسی کوچک شروع شود و فقط شامل حرف، عدد و _ باشد.',
+    ),
+  name: catalogNameSchema,
+  type: z.enum(
+    ['text', 'number', 'boolean', 'select', 'multiselect', 'color', 'date'],
+    { error: 'نوع ویژگی معتبر نیست.' },
+  ),
+  scope: z.enum(['product', 'variant', 'both'], {
+    error: 'محدوده ویژگی معتبر نیست.',
+  }),
+  unit: z
+    .string()
+    .trim()
+    .max(30, 'واحد نباید بیشتر از ۳۰ کاراکتر باشد.')
+    .optional(),
   isFilterable: z.boolean().optional(),
   isVariantOption: z.boolean().optional(),
   isRequired: z.boolean().optional(),
-  sortOrder: z.number().int().min(0).optional(),
+  sortOrder: z
+    .number()
+    .int('ترتیب نمایش باید عدد صحیح باشد.')
+    .min(0, 'ترتیب نمایش نمی‌تواند منفی باشد.')
+    .optional(),
   values: z.array(adminAttributeValueInputSchema).optional(),
 })
 
@@ -106,11 +179,17 @@ export const adminCollectionSchema = z.object({
 })
 
 export const adminCollectionInputSchema = z.object({
-  slug: z.string().trim().min(1).max(120),
-  name: z.string().trim().min(1).max(120),
-  description: z.string().trim().max(2000).optional(),
-  type: z.enum(['manual', 'smart']).optional(),
-  rulesJson: z.string().trim().max(10000).optional(),
+  slug: catalogSlugSchema,
+  name: catalogNameSchema,
+  description: catalogDescriptionSchema.optional(),
+  type: z.enum(['manual', 'smart'], {
+    error: 'نوع کالکشن معتبر نیست.',
+  }).optional(),
+  rulesJson: z
+    .string()
+    .trim()
+    .max(10000, 'قوانین کالکشن نباید بیشتر از ۱۰۰۰۰ کاراکتر باشد.')
+    .optional(),
   isActive: z.boolean().optional(),
 })
 
@@ -126,10 +205,12 @@ export const adminTagSchema = z.object({
 })
 
 export const adminTagInputSchema = z.object({
-  slug: z.string().trim().min(1).max(120),
-  name: z.string().trim().min(1).max(120),
-  type: z.enum(['tag', 'label']).optional(),
-  color: z.string().trim().max(20).optional(),
+  slug: catalogSlugSchema,
+  name: catalogNameSchema,
+  type: z.enum(['tag', 'label'], {
+    error: 'نوع تگ معتبر نیست.',
+  }).optional(),
+  color: catalogColorSchema.optional(),
   isActive: z.boolean().optional(),
 })
 

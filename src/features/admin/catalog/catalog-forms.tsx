@@ -99,35 +99,71 @@ interface TagFormValue {
 }
 
 const brandFormSchema = brandInputSchema.extend({
-  description: z.string().trim().max(2000),
-  websiteUrl: z.string().trim().max(255),
+  description: z
+    .string()
+    .trim()
+    .max(2000, 'توضیحات نباید بیشتر از ۲۰۰۰ کاراکتر باشد.'),
+  websiteUrl: z
+    .string()
+    .trim()
+    .max(255, 'آدرس وب‌سایت نباید بیشتر از ۲۵۵ کاراکتر باشد.')
+    .refine(
+      value => value === '' || z.string().url().safeParse(value).success,
+      'آدرس وب‌سایت معتبر نیست.',
+    ),
   isActive: z.boolean(),
 })
 
 const categoryFormSchema = categoryInputSchema.extend({
   parentId: z.string(),
-  description: z.string().trim().max(2000),
-  sortOrder: z.number().int().min(0),
+  description: z
+    .string()
+    .trim()
+    .max(2000, 'توضیحات نباید بیشتر از ۲۰۰۰ کاراکتر باشد.'),
+  sortOrder: z
+    .number()
+    .int('ترتیب نمایش باید عدد صحیح باشد.')
+    .min(0, 'ترتیب نمایش نمی‌تواند منفی باشد.'),
   isActive: z.boolean(),
 })
 
 const attributeFormSchema = attributeInputSchema.omit({ values: true }).extend({
-  unit: z.string().trim().max(30),
+  unit: z
+    .string()
+    .trim()
+    .max(30, 'واحد نباید بیشتر از ۳۰ کاراکتر باشد.'),
   isFilterable: z.boolean(),
   isVariantOption: z.boolean(),
   isRequired: z.boolean(),
-  valuesText: z.string().trim().max(10000),
+  valuesText: z
+    .string()
+    .trim()
+    .max(10000, 'مقادیر ویژگی نباید بیشتر از ۱۰۰۰۰ کاراکتر باشد.'),
 })
 
 const collectionFormSchema = collectionInputSchema.extend({
-  description: z.string().trim().max(2000),
-  type: z.enum(['manual', 'smart']),
+  description: z
+    .string()
+    .trim()
+    .max(2000, 'توضیحات نباید بیشتر از ۲۰۰۰ کاراکتر باشد.'),
+  type: z.enum(['manual', 'smart'], {
+    error: 'نوع کالکشن معتبر نیست.',
+  }),
   isActive: z.boolean(),
 })
 
 const tagFormSchema = tagInputSchema.extend({
-  type: z.enum(['tag', 'label']),
-  color: z.string().trim().max(20),
+  type: z.enum(['tag', 'label'], {
+    error: 'نوع تگ معتبر نیست.',
+  }),
+  color: z
+    .string()
+    .trim()
+    .max(20, 'کد رنگ نباید بیشتر از ۲۰ کاراکتر باشد.')
+    .refine(
+      value => value === '' || /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value),
+      'رنگ باید به‌صورت HEX معتبر مثل #111827 باشد.',
+    ),
   isActive: z.boolean(),
 })
 
