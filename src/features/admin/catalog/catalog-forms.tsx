@@ -6,15 +6,13 @@ import type {
   AdminCollection,
   AdminTag,
 } from '#/orpc/schemas/admin/catalog'
-import { useForm } from '@tanstack/react-form'
-import { useStore } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import { useRef } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import { useCatalogSlugSync } from './use-catalog-slug-sync'
-
 import { Button } from '#/components/ui/button'
+
 import {
   DialogFooter,
 } from '#/components/ui/dialog'
@@ -31,6 +29,7 @@ import { Input } from '#/components/ui/input'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -40,13 +39,14 @@ import { Textarea } from '#/components/ui/textarea'
 import { useShowFieldError } from '#/features/settings/components/field-validation'
 import { slugify, slugifyAttributeValue } from '#/lib/slug'
 import {
-  adminAttributeInputSchema as attributeInputSchema,
   adminAttributeValueInputSchema,
+  adminAttributeInputSchema as attributeInputSchema,
   adminBrandInputSchema as brandInputSchema,
   adminCategoryInputSchema as categoryInputSchema,
   adminCollectionInputSchema as collectionInputSchema,
   adminTagInputSchema as tagInputSchema,
 } from '#/orpc/schemas/admin/catalog'
+import { useCatalogSlugSync } from './use-catalog-slug-sync'
 
 type BrandPayload = z.infer<typeof brandInputSchema>
 type CategoryPayload = z.infer<typeof categoryInputSchema>
@@ -592,12 +592,16 @@ export function CategoryForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">بدون والد</SelectItem>
-                    {parentOptions.map(category => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      <SelectItem value="none">بدون والد</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      {parentOptions.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FieldErrors field={field} />
@@ -691,9 +695,9 @@ export function AttributeForm({
         isRequired: value.isRequired,
       }
 
-      const valuesChanged =
-        mode === 'create'
-        || value.valuesText.trim() !== initialValuesTextRef.current
+      const valuesChanged
+        = mode === 'create'
+          || value.valuesText.trim() !== initialValuesTextRef.current
 
       if (mode === 'create') {
         const parsed = attributeInputSchema.safeParse({
@@ -801,11 +805,13 @@ export function AttributeForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(attributeTypeLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {Object.entries(attributeTypeLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldErrors field={field} />
@@ -826,11 +832,13 @@ export function AttributeForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(attributeScopeLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      <SelectGroup>
+                        {Object.entries(attributeScopeLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FieldErrors field={field} />
@@ -1031,11 +1039,13 @@ export function CollectionForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(collectionTypeLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {Object.entries(collectionTypeLabels).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FieldErrors field={field} />
@@ -1197,11 +1207,13 @@ export function TagForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(tagTypeLabels).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      {Object.entries(tagTypeLabels).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FieldErrors field={field} />

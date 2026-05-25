@@ -8,6 +8,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -37,12 +38,15 @@ export function ProfileGenderField({ field }: ProfileGenderFieldProps) {
           <SelectValue placeholder="انتخاب کنید" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="none">انتخاب نشده</SelectItem>
-          {PROFILE_GENDER_OPTIONS.map(option => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
+          <SelectGroup>
+
+            <SelectItem value="none">انتخاب نشده</SelectItem>
+            {PROFILE_GENDER_OPTIONS.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
       {showError && <FieldError errors={field.state.meta.errors} />}
