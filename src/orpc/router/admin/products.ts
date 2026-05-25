@@ -18,7 +18,7 @@ import {
 import { slugify } from '#/lib/slug'
 import { deleteProductImageFile } from '#/lib/uploads/product-images'
 import {
-  optionSignature,
+  normalizeVariantOptionInputs,
   validateVariantOptionInputs,
 } from '#/lib/variant-options'
 import {
@@ -551,15 +551,6 @@ export const saveVariants = os
       throw new ORPCError('BAD_REQUEST', { message: optionErrors[0] })
     }
 
-    const signatures = input.variants.map(variant =>
-      optionSignature(variant.optionValues),
-    )
-    if (new Set(signatures).size !== signatures.length) {
-      throw new ORPCError('BAD_REQUEST', {
-        message: 'دو تنوع با همان سایز و رنگ مجاز نیست.',
-      })
-    }
-
     const keptIds = input.variants
       .map(v => v.id)
       .filter((id): id is string => Boolean(id))
@@ -606,7 +597,13 @@ export const saveVariants = os
       }
 
       if (variantId) {
-        await replaceVariantOptions(variantId, variant.optionValues)
+        await replaceVariantOptions(
+          variantId,
+          normalizeVariantOptionInputs(
+            variant.optionValues,
+            optionAttributeIds,
+          ),
+        )
       }
     }
 

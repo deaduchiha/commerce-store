@@ -192,7 +192,7 @@ export const adminProductInputSchema = z.object({
 export const adminProductVariantInputSchema = z.object({
   id: z.string().optional(),
   sku: z.string().trim().min(1).max(64),
-  optionValues: z.array(adminVariantOptionInputSchema).min(1),
+  optionValues: z.array(adminVariantOptionInputSchema).default([]),
   priceInRials: z.number().int().min(0),
   compareAtPriceInRials: z.number().int().min(0).nullable().optional(),
   stockQuantity: z.number().int().min(0),

@@ -92,6 +92,14 @@ Product APIs stay under `admin.products` and carry normalized catalog fields:
 - **`variant_attribute_values`**: chosen catalog options per variant (size, color, …) from attributes marked `is_variant_option`.
 - **`product_attribute_values`**: product-level facts (gender, material, season) shared by all SKUs.
 
+### When size/color apply
+
+Variant-option rules are **catalog-wide**, not per product:
+
+- If **no** attributes have `is_variant_option`, variants need only SKU + price + stock (`optionValues` may be empty).
+- If **only size** (or only color) is a variant option, each SKU must set that attribute; the other is not required.
+- If **both** are variant options, each SKU must set both. Duplicate SKUs are blocked by unique `sku`; duplicate option combinations are blocked when variant options exist.
+
 ## Migration Path
 
 Legacy fields still in use elsewhere:

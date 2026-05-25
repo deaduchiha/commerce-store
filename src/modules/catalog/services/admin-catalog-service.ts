@@ -13,7 +13,8 @@ import type {
 } from '#/orpc/schemas/admin/catalog'
 import { ORPCError } from '@orpc/server'
 
-import { and, asc, eq, like, or } from 'drizzle-orm'
+import { and, asc, eq, inArray, like, or } from 'drizzle-orm'
+import { slugifyAttributeValue } from '#/lib/slug'
 import { db } from '#/db'
 import {
   attributes,
@@ -50,6 +51,72 @@ type CollectionProductsUpdateInput = z.infer<
 function emptyToNull(value: string | undefined) {
   const trimmed = value?.trim()
   return trimmed || null
+}
+
+type AttributeValueInput = NonNullable<AttributeInput['values']>[number]
+
+async function syncAttributeValues(
+  attributeId: string,
+  incoming: NonNullable<AttributeInput['values']>,
+) {
+  const existing = await db
+    .select()
+    .from(attributeValues)
+    .where(eq(attributeValues.attributeId, attributeId))
+
+  const keptIds = new Set<string>()
+
+  for (const [index, item] of incoming.entries()) {
+    const slug = emptyToNull(item.slug) ?? slugifyAttributeValue(item.value, index)
+    const sortOrder = item.sortOrder ?? index
+
+    const match = item.id
+      ? existing.find(row => row.id === item.id)
+      : existing.find(
+          row =>
+            (slug && row.slug === slug)
+            || row.value === item.value,
+        )
+
+    if (match) {
+      keptIds.add(match.id)
+      await db
+        .update(attributeValues)
+        .set({
+          value: item.value,
+          slug,
+          colorHex: emptyToNull(item.colorHex),
+          sortOrder,
+        })
+        .where(eq(attributeValues.id, match.id))
+    }
+    else {
+      const [inserted] = await db
+        .insert(attributeValues)
+        .values({
+          attributeId,
+          value: item.value,
+          slug,
+          colorHex: emptyToNull(item.colorHex),
+          sortOrder,
+        })
+        .returning({ id: attributeValues.id })
+
+      if (inserted) {
+        keptIds.add(inserted.id)
+      }
+    }
+  }
+
+  const removeIds = existing
+    .filter(row => !keptIds.has(row.id))
+    .map(row => row.id)
+
+  if (removeIds.length > 0) {
+    await db
+      .delete(attributeValues)
+      .where(inArray(attributeValues.id, removeIds))
+  }
 }
 
 function brandDto(row: typeof brands.$inferSelect) {
@@ -392,22 +459,8 @@ export const adminCatalogService = {
       throw new ORPCError('NOT_FOUND', { message: 'ویژگی پیدا نشد.' })
     }
 
-    if (input.data.values) {
-      await db
-        .delete(attributeValues)
-        .where(eq(attributeValues.attributeId, input.id))
-
-      if (input.data.values.length > 0) {
-        await db.insert(attributeValues).values(
-          input.data.values.map(value => ({
-            attributeId: input.id,
-            value: value.value,
-            slug: emptyToNull(value.slug),
-            colorHex: emptyToNull(value.colorHex),
-            sortOrder: value.sortOrder ?? 0,
-          })),
-        )
-      }
+    if (input.data.values !== undefined) {
+      await syncAttributeValues(input.id, input.data.values)
     }
 
     return attributeDto(row)

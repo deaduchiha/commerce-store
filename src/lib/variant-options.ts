@@ -12,11 +12,46 @@ export interface VariantOptionInput {
   attributeValueId: string
 }
 
+/** True when the catalog defines at least one variant-option attribute (size, color, …). */
+export function requiresCatalogVariantOptions(optionAttributeIds: string[]) {
+  return optionAttributeIds.length > 0
+}
+
+/** Keep only options for catalog variant-option attributes; drop stale rows. */
+export function normalizeVariantOptionInputs(
+  optionValues: VariantOptionInput[],
+  optionAttributeIds: string[],
+): VariantOptionInput[] {
+  if (optionAttributeIds.length === 0) {
+    return []
+  }
+
+  const allowed = new Set(optionAttributeIds)
+  return optionValues.filter(option => allowed.has(option.attributeId))
+}
+
 export function optionSignature(options: VariantOptionInput[]) {
   return [...options]
     .sort((a, b) => a.attributeId.localeCompare(b.attributeId))
     .map(option => `${option.attributeId}:${option.attributeValueId}`)
     .join('|')
+}
+
+export function hasDuplicateOptionSignatures(
+  variants: Array<{ optionValues: VariantOptionInput[] }>,
+  optionAttributeIds: string[],
+) {
+  if (!requiresCatalogVariantOptions(optionAttributeIds)) {
+    return false
+  }
+
+  const signatures = variants.map(variant =>
+    optionSignature(
+      normalizeVariantOptionInputs(variant.optionValues, optionAttributeIds),
+    ),
+  )
+
+  return new Set(signatures).size !== signatures.length
 }
 
 export function validateVariantOptionInputs(
@@ -25,33 +60,33 @@ export function validateVariantOptionInputs(
 ) {
   const errors: string[] = []
 
-  if (optionAttributeIds.length === 0) {
+  if (!requiresCatalogVariantOptions(optionAttributeIds)) {
     return errors
   }
 
-  const signatures = new Set<string>()
-
   variants.forEach((variant, index) => {
+    const normalized = normalizeVariantOptionInputs(
+      variant.optionValues,
+      optionAttributeIds,
+    )
     const byAttribute = new Map(
-      variant.optionValues.map(option => [option.attributeId, option]),
+      normalized.map(option => [option.attributeId, option]),
     )
 
     for (const attributeId of optionAttributeIds) {
       const selected = byAttribute.get(attributeId)
       if (!selected?.attributeValueId) {
-        errors.push(`تنوع ${index + 1}: همه گزینه‌های تنوع (سایز، رنگ و …) باید انتخاب شوند.`)
+        errors.push(
+          `تنوع ${index + 1}: همه گزینه‌های تنوع (سایز، رنگ و …) باید انتخاب شوند.`,
+        )
         break
       }
     }
-
-    const signature = optionSignature(variant.optionValues)
-    if (signature && signatures.has(signature)) {
-      errors.push(`تنوع ${index + 1}: ترکیب سایز/رنگ با تنوع دیگر تکراری است.`)
-    }
-    else if (signature) {
-      signatures.add(signature)
-    }
   })
+
+  if (hasDuplicateOptionSignatures(variants, optionAttributeIds)) {
+    errors.push('دو تنوع با همان ترکیب گزینه‌ها مجاز نیست.')
+  }
 
   return errors
 }

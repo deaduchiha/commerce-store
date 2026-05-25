@@ -44,8 +44,18 @@ const persianCharMap: Record<string, string> = {
   ' ': '-',
 }
 
+const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
+const arabicDigits = '٠١٢٣٤٥٦٧٨٩'
+
+/** Persian/Arabic numerals → ASCII before slugging (e.g. ۴۲ → 42). */
+export function normalizeDigits(value: string) {
+  return value
+    .replace(/[۰-۹]/g, char => String(persianDigits.indexOf(char)))
+    .replace(/[٠-٩]/g, char => String(arabicDigits.indexOf(char)))
+}
+
 export function transliteratePersian(value: string) {
-  return [...value]
+  return [...normalizeDigits(value)]
     .map(char => persianCharMap[char] ?? char)
     .join('')
 }
@@ -59,4 +69,10 @@ export function slugify(value: string) {
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+/** Stable slug for attribute option lines (Persian label + fallback). */
+export function slugifyAttributeValue(value: string, index: number) {
+  const slug = slugify(value)
+  return slug || `option-${index + 1}`
 }

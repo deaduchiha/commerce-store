@@ -390,6 +390,7 @@ export function AttributesSection() {
       >
         <AttributeForm
           key={editing?.id ?? 'create-attribute'}
+          mode={editing ? 'edit' : 'create'}
           defaultValues={editing ? attributeToForm(editing) : emptyAttributeForm}
           isSaving={createMutation.isPending || updateMutation.isPending}
           onCancel={closeForm}

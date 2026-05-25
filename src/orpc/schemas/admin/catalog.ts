@@ -125,7 +125,12 @@ export const adminAttributeValueInputSchema = z.object({
     .trim()
     .min(1, 'مقدار ویژگی را وارد کنید.')
     .max(120, 'مقدار ویژگی نباید بیشتر از ۱۲۰ کاراکتر باشد.'),
-  slug: catalogSlugSchema.optional(),
+  slug: z
+    .string()
+    .trim()
+    .optional()
+    .transform(slug => slug || undefined)
+    .pipe(catalogSlugSchema.optional()),
   colorHex: catalogColorSchema.optional(),
   sortOrder: z
     .number()

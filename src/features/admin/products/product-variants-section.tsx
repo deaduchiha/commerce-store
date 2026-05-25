@@ -34,7 +34,10 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { Switch } from '#/components/ui/switch'
-import { optionSignature } from '#/lib/variant-options'
+import {
+  hasDuplicateOptionSignatures,
+  requiresCatalogVariantOptions,
+} from '#/lib/variant-options'
 import { orpc } from '#/orpc/client'
 
 function emptyVariant(): AdminProductVariantInput {
@@ -114,7 +117,9 @@ function validateVariants(
 ) {
   const errors = new Map<string, string>()
   const skuCounts = new Map<string, number>()
-  const optionSignatures = new Set<string>()
+  const requiresOptions = requiresCatalogVariantOptions(
+    variantOptionAttributes.map(attribute => attribute.id),
+  )
 
   variants.forEach((variant) => {
     const sku = variant.sku.trim()
@@ -133,23 +138,15 @@ function validateVariants(
       errors.set(`${prefix}.sku`, 'SKU تکراری است.')
     }
 
-    for (const attribute of variantOptionAttributes) {
-      const selected = getOptionValueId(variant, attribute.id)
-      if (!selected) {
-        errors.set(
-          `${prefix}.optionValues.${attribute.id}`,
-          `${attribute.name} را انتخاب کنید.`,
-        )
-      }
-    }
-
-    if (variant.optionValues.length > 0) {
-      const signature = optionSignature(variant.optionValues)
-      if (optionSignatures.has(signature)) {
-        errors.set(`${prefix}.optionValues`, 'ترکیب گزینه‌ها تکراری است.')
-      }
-      else {
-        optionSignatures.add(signature)
+    if (requiresOptions) {
+      for (const attribute of variantOptionAttributes) {
+        const selected = getOptionValueId(variant, attribute.id)
+        if (!selected) {
+          errors.set(
+            `${prefix}.optionValues.${attribute.id}`,
+            `${attribute.name} را انتخاب کنید.`,
+          )
+        }
       }
     }
 
@@ -171,6 +168,16 @@ function validateVariants(
       )
     }
   })
+
+  if (
+    requiresOptions
+    && hasDuplicateOptionSignatures(
+      variants,
+      variantOptionAttributes.map(attribute => attribute.id),
+    )
+  ) {
+    errors.set('variants.optionValues', 'ترکیب گزینه‌ها بین تنوع‌ها تکراری است.')
+  }
 
   return errors
 }
@@ -253,7 +260,10 @@ export function ProductVariantsSection({
     }
 
     if (errors.size > 0) {
-      toast.error('لطفا خطاهای فرم تنوع‌ها را برطرف کنید.')
+      toast.error(
+        errors.get('variants.optionValues')
+        ?? 'لطفا خطاهای فرم تنوع‌ها را برطرف کنید.',
+      )
       return
     }
 
@@ -275,15 +285,26 @@ export function ProductVariantsSection({
           <div className="space-y-1">
             <CardTitle>تنوع‌ها (SKU / قیمت / موجودی)</CardTitle>
             <CardDescription>
-              هر ردیف یک SKU قابل فروش است. سایز و رنگ از ویژگی‌های کاتالوگ با
-              پرچم «گزینه تنوع» انتخاب می‌شوند.
-              {variantOptionAttributes.length === 0 && (
-                <>
-                  {' '}
-                  ابتدا در کاتالوگ ویژگی‌های سایز و رنگ را به‌عنوان گزینه تنوع
-                  تعریف کنید.
-                </>
-              )}
+              هر ردیف یک SKU قابل فروش با قیمت و موجودی جداگانه است.
+              {variantOptionAttributes.length > 0
+                ? (
+                    <>
+                      {' '}
+                      برای این فروشگاه، هر تنوع باید
+                      {' '}
+                      {variantOptionAttributes.map(attribute => attribute.name).join(' و ')}
+                      {' '}
+                      را از ویژگی‌های «گزینه تنوع» انتخاب کند.
+                    </>
+                  )
+                : (
+                    <>
+                      {' '}
+                      در کاتالوگ هیچ «گزینه تنوع» تعریف نشده؛ محصولات تک‌SKU فقط
+                      با SKU، قیمت و موجودی کافی‌اند (مثلاً کالای دیجیتال یا
+                      لوازم جانبی).
+                    </>
+                  )}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">

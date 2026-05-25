@@ -1,18 +1,15 @@
 import type { AnyFieldApi } from '@tanstack/react-form'
 import type {
   AdminAttribute,
-  adminAttributeInputSchema,
   AdminBrand,
-  adminBrandInputSchema,
   AdminCategory,
-  adminCategoryInputSchema,
   AdminCollection,
-  adminCollectionInputSchema,
   AdminTag,
-  adminTagInputSchema,
 } from '#/orpc/schemas/admin/catalog'
 import { useForm } from '@tanstack/react-form'
 import { useStore } from '@tanstack/react-form'
+import { useRef } from 'react'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { useCatalogSlugSync } from './use-catalog-slug-sync'
@@ -41,9 +38,10 @@ import {
 import { Switch } from '#/components/ui/switch'
 import { Textarea } from '#/components/ui/textarea'
 import { useShowFieldError } from '#/features/settings/components/field-validation'
-import { slugify } from '#/lib/slug'
+import { slugify, slugifyAttributeValue } from '#/lib/slug'
 import {
   adminAttributeInputSchema as attributeInputSchema,
+  adminAttributeValueInputSchema,
   adminBrandInputSchema as brandInputSchema,
   adminCategoryInputSchema as categoryInputSchema,
   adminCollectionInputSchema as collectionInputSchema,
@@ -330,7 +328,7 @@ function attributeValuesFromText(valuesText: string) {
     .filter(Boolean)
     .map((value, index) => ({
       value,
-      slug: slugify(value),
+      slug: slugifyAttributeValue(value, index),
       sortOrder: index,
     }))
 }
@@ -662,21 +660,27 @@ export function CategoryForm({
 
 export function AttributeForm({
   defaultValues,
+  mode,
   isSaving,
   onCancel,
   onSubmit,
 }: {
   defaultValues: AttributeFormValue
+  mode: 'create' | 'edit'
   isSaving: boolean
   onCancel: () => void
-  onSubmit: (value: AttributePayload) => Promise<unknown> | unknown
+  onSubmit: (
+    value: AttributePayload | Partial<AttributePayload>,
+  ) => Promise<unknown> | unknown
 }) {
   const codeSync = useCatalogSlugSync(defaultValues.code)
+  const initialValuesTextRef = useRef(defaultValues.valuesText.trim())
+
   const form = useForm({
     defaultValues,
     validators: { onSubmit: attributeFormSchema },
     onSubmit: async ({ value }) => {
-      await onSubmit(attributeInputSchema.parse({
+      const base = {
         name: value.name,
         code: value.code,
         type: value.type,
@@ -685,8 +689,46 @@ export function AttributeForm({
         isFilterable: value.isFilterable,
         isVariantOption: value.isVariantOption,
         isRequired: value.isRequired,
-        values: attributeValuesFromText(value.valuesText),
-      }))
+      }
+
+      const valuesChanged =
+        mode === 'create'
+        || value.valuesText.trim() !== initialValuesTextRef.current
+
+      if (mode === 'create') {
+        const parsed = attributeInputSchema.safeParse({
+          ...base,
+          values: attributeValuesFromText(value.valuesText),
+        })
+
+        if (!parsed.success) {
+          const first = parsed.error.issues[0]
+          toast.error(first?.message ?? 'داده‌های ویژگی معتبر نیست.')
+          return
+        }
+
+        await onSubmit(parsed.data)
+        return
+      }
+
+      const patch: Partial<AttributePayload> = { ...base }
+
+      if (valuesChanged) {
+        const values = attributeValuesFromText(value.valuesText)
+        const valuesParsed = z
+          .array(adminAttributeValueInputSchema)
+          .safeParse(values)
+
+        if (!valuesParsed.success) {
+          const first = valuesParsed.error.issues[0]
+          toast.error(first?.message ?? 'مقادیر ویژگی معتبر نیست.')
+          return
+        }
+
+        patch.values = valuesParsed.data
+      }
+
+      await onSubmit(patch)
     },
   })
 
@@ -849,13 +891,19 @@ export function AttributeForm({
 
             <form.Field name="isVariantOption">
               {field => (
-                <Field orientation="horizontal">
-                  <Switch
-                    id={field.name}
-                    checked={field.state.value}
-                    onCheckedChange={field.handleChange}
-                  />
-                  <FieldLabel htmlFor={field.name}>گزینه تنوع</FieldLabel>
+                <Field orientation="vertical" className="gap-2">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id={field.name}
+                      checked={field.state.value}
+                      onCheckedChange={field.handleChange}
+                    />
+                    <FieldLabel htmlFor={field.name}>گزینه تنوع</FieldLabel>
+                  </div>
+                  <FieldDescription>
+                    فقط نمایش در فرم تنوع محصول را کنترل می‌کند؛ مقادیر
+                    انتخابی در دیتابیس حفظ می‌شوند.
+                  </FieldDescription>
                   <FieldErrors field={field} />
                 </Field>
               )}
