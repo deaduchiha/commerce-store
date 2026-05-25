@@ -46,6 +46,7 @@ export const catalogListInputSchema = z.object({
     .trim()
     .max(120, 'عبارت جستجو نباید بیشتر از ۱۲۰ کاراکتر باشد.')
     .optional(),
+  activeOnly: z.boolean().optional(),
 })
 
 export const adminBrandSchema = z.object({
@@ -173,9 +174,26 @@ export const adminCollectionSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   type: z.enum(['manual', 'smart']),
+  rulesJson: z.string().nullable(),
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+})
+
+export const adminCollectionProductSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  sortOrder: z.number().int(),
+})
+
+export const adminCollectionProductsInputSchema = z.object({
+  collectionId: z.string().min(1),
+})
+
+export const adminCollectionProductsUpdateSchema = z.object({
+  collectionId: z.string().min(1),
+  productIds: z.array(z.string().min(1)),
 })
 
 export const adminCollectionInputSchema = z.object({

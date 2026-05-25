@@ -52,6 +52,14 @@ export const adminProductListSchema = z.object({
   pageCount: z.number().int().min(0),
 })
 
+export const adminProductAttributeValueSchema = z.object({
+  attributeId: z.string(),
+  attributeValueId: z.string().nullable().optional(),
+  valueText: z.string().nullable().optional(),
+  valueNumber: z.number().int().nullable().optional(),
+  valueBoolean: z.boolean().nullable().optional(),
+})
+
 export const adminProductDetailSchema = z.object({
   id: z.string(),
   productType: z.enum(['simple', 'variable', 'bundle', 'digital', 'subscription', 'service']),
@@ -63,6 +71,9 @@ export const adminProductDetailSchema = z.object({
   brandId: z.string().nullable(),
   brand: z.string().nullable(),
   categoryIds: z.array(z.string()),
+  tagIds: z.array(z.string()),
+  collectionIds: z.array(z.string()),
+  attributeValues: z.array(adminProductAttributeValueSchema),
   metaTitle: z.string().nullable(),
   metaDescription: z.string().nullable(),
   metaKeywords: z.string().nullable(),
@@ -83,6 +94,9 @@ export const adminProductFormSchema = z.object({
   brandId: z.string(),
   brand: z.string(),
   categoryIds: z.array(z.string()),
+  tagIds: z.array(z.string()),
+  collectionIds: z.array(z.string()),
+  attributeValues: z.array(adminProductAttributeValueSchema),
   shortDescription: z.string(),
   description: z.string(),
   metaTitle: z.string(),
@@ -107,6 +121,9 @@ export const adminProductFormWithMetaSchema = z.object({
   brandId: z.string(),
   brand: z.string(),
   categoryIds: z.array(z.string()),
+  tagIds: z.array(z.string()),
+  collectionIds: z.array(z.string()),
+  attributeValues: z.array(adminProductAttributeValueSchema),
   shortDescription: z.string(),
   description: z.string(),
   metaJson: z.string().superRefine((value, ctx) => {
@@ -150,6 +167,9 @@ export const adminProductInputSchema = z.object({
   brandId: z.string().trim().max(255).optional(),
   brand: z.string().trim().max(80).optional(),
   categoryIds: z.array(z.string().trim().min(1)).optional(),
+  tagIds: z.array(z.string().trim().min(1)).optional(),
+  collectionIds: z.array(z.string().trim().min(1)).optional(),
+  attributeValues: z.array(adminProductAttributeValueSchema).optional(),
   shortDescription: z.string().trim().max(300).optional(),
   description: z.string().trim().max(10000).optional(),
   metaTitle: z.string().trim().max(70).optional(),

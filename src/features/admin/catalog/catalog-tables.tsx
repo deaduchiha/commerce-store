@@ -6,6 +6,9 @@ import type {
   AdminTag,
 } from '#/orpc/schemas/admin/catalog'
 
+import { Pencil, Trash2 } from 'lucide-react'
+
+import { Button } from '#/components/ui/button'
 import { TableCell, TableRow } from '#/components/ui/table'
 
 import {
@@ -141,12 +144,14 @@ export function CollectionsTable({
   isLoading,
   emptyMessage,
   onEdit,
+  onManageProducts,
   onDelete,
 }: {
   items: AdminCollection[]
   isLoading: boolean
   emptyMessage?: string
   onEdit: (item: AdminCollection) => void
+  onManageProducts?: (item: AdminCollection) => void
   onDelete: (item: AdminCollection) => void
 }) {
   return (
@@ -162,12 +167,38 @@ export function CollectionsTable({
           <TableCell className="text-xs">{item.slug}</TableCell>
           <TableCell>{item.type}</TableCell>
           <StatusCell active={item.isActive} />
-          <RowActions
-            editLabel="ویرایش کالکشن"
-            deleteLabel="حذف کالکشن"
-            onEdit={() => onEdit(item)}
-            onDelete={() => onDelete(item)}
-          />
+          <TableCell>
+            <div className="flex flex-wrap gap-2">
+              {item.type === 'manual' && onManageProducts && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onManageProducts(item)}
+                >
+                  محصولات
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                onClick={() => onEdit(item)}
+              >
+                <Pencil />
+                <span className="sr-only">ویرایش کالکشن</span>
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon-sm"
+                onClick={() => onDelete(item)}
+              >
+                <Trash2 />
+                <span className="sr-only">حذف کالکشن</span>
+              </Button>
+            </div>
+          </TableCell>
         </TableRow>
       ))}
     </CatalogTable>

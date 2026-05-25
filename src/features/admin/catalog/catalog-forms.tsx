@@ -12,7 +12,10 @@ import type {
   adminTagInputSchema,
 } from '#/orpc/schemas/admin/catalog'
 import { useForm } from '@tanstack/react-form'
+import { useStore } from '@tanstack/react-form'
 import { z } from 'zod'
+
+import { useCatalogSlugSync } from './use-catalog-slug-sync'
 
 import { Button } from '#/components/ui/button'
 import {
@@ -87,7 +90,34 @@ interface CollectionFormValue {
   slug: string
   type: NonNullable<CollectionPayload['type']>
   description: string
+  rulesJson: string
   isActive: boolean
+}
+
+const attributeTypeLabels: Record<AttributeFormValue['type'], string> = {
+  text: 'متن',
+  number: 'عدد',
+  boolean: 'بله/خیر',
+  select: 'انتخابی',
+  multiselect: 'چندانتخابی',
+  color: 'رنگ',
+  date: 'تاریخ',
+}
+
+const attributeScopeLabels: Record<AttributeFormValue['scope'], string> = {
+  product: 'محصول',
+  variant: 'تنوع',
+  both: 'هر دو',
+}
+
+const collectionTypeLabels: Record<CollectionFormValue['type'], string> = {
+  manual: 'دستی',
+  smart: 'هوشمند',
+}
+
+const tagTypeLabels: Record<TagFormValue['type'], string> = {
+  tag: 'تگ',
+  label: 'لیبل',
 }
 
 interface TagFormValue {
@@ -149,6 +179,25 @@ const collectionFormSchema = collectionInputSchema.extend({
   type: z.enum(['manual', 'smart'], {
     error: 'نوع کالکشن معتبر نیست.',
   }),
+  rulesJson: z
+    .string()
+    .trim()
+    .max(10000, 'قوانین کالکشن نباید بیشتر از ۱۰۰۰۰ کاراکتر باشد.')
+    .superRefine((value, ctx) => {
+      if (!value) {
+        return
+      }
+
+      try {
+        JSON.parse(value)
+      }
+      catch {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'قوانین کالکشن باید JSON معتبر باشد.',
+        })
+      }
+    }),
   isActive: z.boolean(),
 })
 
@@ -201,6 +250,7 @@ export const emptyCollectionForm: CollectionFormValue = {
   slug: '',
   type: 'manual',
   description: '',
+  rulesJson: '{\n  "match": "all"\n}',
   isActive: true,
 }
 
@@ -253,6 +303,7 @@ export function collectionToForm(item: AdminCollection): CollectionFormValue {
     slug: item.slug,
     type: item.type,
     description: item.description ?? '',
+    rulesJson: item.rulesJson ?? '{\n  "match": "all"\n}',
     isActive: item.isActive,
   }
 }
@@ -319,6 +370,7 @@ export function BrandForm({
   onCancel: () => void
   onSubmit: (value: BrandPayload) => Promise<unknown> | unknown
 }) {
+  const slugSync = useCatalogSlugSync(defaultValues.slug)
   const form = useForm({
     defaultValues,
     validators: { onSubmit: brandFormSchema },
@@ -359,9 +411,8 @@ export function BrandForm({
                   onChange={(event) => {
                     const name = event.target.value
                     field.handleChange(name)
-                    if (!form.state.values.slug) {
-                      form.setFieldValue('slug', slugify(name))
-                    }
+                    slugSync.syncSlugFromName(name, slug =>
+                      form.setFieldValue('slug', slug))
                   }}
                 />
                 <FieldErrors field={field} />
@@ -373,13 +424,19 @@ export function BrandForm({
             {field => (
               <Field>
                 <FieldLabel htmlFor={field.name}>اسلاگ</FieldLabel>
+                <FieldDescription>
+                  برای نام فارسی، اسلاگ را با حروف انگلیسی وارد کنید.
+                </FieldDescription>
                 <Input
                   id={field.name}
                   dir="ltr"
                   value={field.state.value}
                   autoComplete="off"
                   onBlur={field.handleBlur}
-                  onChange={event => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    slugSync.markSlugTouched()
+                    field.handleChange(event.target.value)
+                  }}
                 />
                 <FieldErrors field={field} />
               </Field>
@@ -451,6 +508,7 @@ export function CategoryForm({
   onCancel: () => void
   onSubmit: (value: CategoryPayload) => Promise<unknown> | unknown
 }) {
+  const slugSync = useCatalogSlugSync(defaultValues.slug)
   const form = useForm({
     defaultValues,
     validators: { onSubmit: categoryFormSchema },
@@ -492,9 +550,8 @@ export function CategoryForm({
                   onChange={(event) => {
                     const name = event.target.value
                     field.handleChange(name)
-                    if (!form.state.values.slug) {
-                      form.setFieldValue('slug', slugify(name))
-                    }
+                    slugSync.syncSlugFromName(name, slug =>
+                      form.setFieldValue('slug', slug))
                   }}
                 />
                 <FieldErrors field={field} />
@@ -506,13 +563,19 @@ export function CategoryForm({
             {field => (
               <Field>
                 <FieldLabel htmlFor={field.name}>اسلاگ</FieldLabel>
+                <FieldDescription>
+                  برای نام فارسی، اسلاگ را با حروف انگلیسی وارد کنید.
+                </FieldDescription>
                 <Input
                   id={field.name}
                   dir="ltr"
                   value={field.state.value}
                   autoComplete="off"
                   onBlur={field.handleBlur}
-                  onChange={event => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    slugSync.markSlugTouched()
+                    field.handleChange(event.target.value)
+                  }}
                 />
                 <FieldErrors field={field} />
               </Field>
@@ -608,6 +671,7 @@ export function AttributeForm({
   onCancel: () => void
   onSubmit: (value: AttributePayload) => Promise<unknown> | unknown
 }) {
+  const codeSync = useCatalogSlugSync(defaultValues.code)
   const form = useForm({
     defaultValues,
     validators: { onSubmit: attributeFormSchema },
@@ -652,9 +716,8 @@ export function AttributeForm({
                   onChange={(event) => {
                     const name = event.target.value
                     field.handleChange(name)
-                    if (!form.state.values.code) {
-                      form.setFieldValue('code', slugify(name).replaceAll('-', '_'))
-                    }
+                    codeSync.syncSlugFromName(name, () =>
+                      form.setFieldValue('code', slugify(name).replaceAll('-', '_')))
                   }}
                 />
                 <FieldErrors field={field} />
@@ -672,7 +735,10 @@ export function AttributeForm({
                   value={field.state.value}
                   autoComplete="off"
                   onBlur={field.handleBlur}
-                  onChange={event => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    codeSync.markSlugTouched()
+                    field.handleChange(event.target.value)
+                  }}
                 />
                 <FieldErrors field={field} />
               </Field>
@@ -693,13 +759,11 @@ export function AttributeForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="text">Text</SelectItem>
-                      <SelectItem value="number">Number</SelectItem>
-                      <SelectItem value="boolean">Boolean</SelectItem>
-                      <SelectItem value="select">Select</SelectItem>
-                      <SelectItem value="multiselect">Multi Select</SelectItem>
-                      <SelectItem value="color">Color</SelectItem>
-                      <SelectItem value="date">Date</SelectItem>
+                      {Object.entries(attributeTypeLabels).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FieldErrors field={field} />
@@ -720,9 +784,11 @@ export function AttributeForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="product">Product</SelectItem>
-                      <SelectItem value="variant">Variant</SelectItem>
-                      <SelectItem value="both">Both</SelectItem>
+                      {Object.entries(attributeScopeLabels).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FieldErrors field={field} />
@@ -827,6 +893,7 @@ export function CollectionForm({
   onCancel: () => void
   onSubmit: (value: CollectionPayload) => Promise<unknown> | unknown
 }) {
+  const slugSync = useCatalogSlugSync(defaultValues.slug)
   const form = useForm({
     defaultValues,
     validators: { onSubmit: collectionFormSchema },
@@ -836,10 +903,14 @@ export function CollectionForm({
         slug: value.slug,
         type: value.type,
         description: optionalText(value.description),
+        rulesJson: value.type === 'smart'
+          ? optionalText(value.rulesJson)
+          : undefined,
         isActive: value.isActive,
       }))
     },
   })
+  const collectionType = useStore(form.store, state => state.values.type)
 
   return (
     <form
@@ -867,9 +938,8 @@ export function CollectionForm({
                   onChange={(event) => {
                     const name = event.target.value
                     field.handleChange(name)
-                    if (!form.state.values.slug) {
-                      form.setFieldValue('slug', slugify(name))
-                    }
+                    slugSync.syncSlugFromName(name, slug =>
+                      form.setFieldValue('slug', slug))
                   }}
                 />
                 <FieldErrors field={field} />
@@ -881,13 +951,19 @@ export function CollectionForm({
             {field => (
               <Field>
                 <FieldLabel htmlFor={field.name}>اسلاگ</FieldLabel>
+                <FieldDescription>
+                  برای نام فارسی، اسلاگ را با حروف انگلیسی وارد کنید.
+                </FieldDescription>
                 <Input
                   id={field.name}
                   dir="ltr"
                   value={field.state.value}
                   autoComplete="off"
                   onBlur={field.handleBlur}
-                  onChange={event => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    slugSync.markSlugTouched()
+                    field.handleChange(event.target.value)
+                  }}
                 />
                 <FieldErrors field={field} />
               </Field>
@@ -907,14 +983,39 @@ export function CollectionForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="smart">Smart</SelectItem>
+                    {Object.entries(collectionTypeLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FieldErrors field={field} />
               </Field>
             )}
           </form.Field>
+
+          {collectionType === 'smart' && (
+            <form.Field name="rulesJson">
+              {field => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>قوانین (JSON)</FieldLabel>
+                  <FieldDescription>
+                    قوانین فیلتر محصولات هوشمند را به‌صورت JSON وارد کنید.
+                  </FieldDescription>
+                  <Textarea
+                    id={field.name}
+                    dir="ltr"
+                    className="min-h-32 font-mono text-sm"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={event => field.handleChange(event.target.value)}
+                  />
+                  <FieldErrors field={field} />
+                </Field>
+              )}
+            </form.Field>
+          )}
 
           <form.Field name="description">
             {field => (
@@ -962,6 +1063,7 @@ export function TagForm({
   onCancel: () => void
   onSubmit: (value: TagPayload) => Promise<unknown> | unknown
 }) {
+  const slugSync = useCatalogSlugSync(defaultValues.slug)
   const form = useForm({
     defaultValues,
     validators: { onSubmit: tagFormSchema },
@@ -1002,9 +1104,8 @@ export function TagForm({
                   onChange={(event) => {
                     const name = event.target.value
                     field.handleChange(name)
-                    if (!form.state.values.slug) {
-                      form.setFieldValue('slug', slugify(name))
-                    }
+                    slugSync.syncSlugFromName(name, slug =>
+                      form.setFieldValue('slug', slug))
                   }}
                 />
                 <FieldErrors field={field} />
@@ -1016,13 +1117,19 @@ export function TagForm({
             {field => (
               <Field>
                 <FieldLabel htmlFor={field.name}>اسلاگ</FieldLabel>
+                <FieldDescription>
+                  برای نام فارسی، اسلاگ را با حروف انگلیسی وارد کنید.
+                </FieldDescription>
                 <Input
                   id={field.name}
                   dir="ltr"
                   value={field.state.value}
                   autoComplete="off"
                   onBlur={field.handleBlur}
-                  onChange={event => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    slugSync.markSlugTouched()
+                    field.handleChange(event.target.value)
+                  }}
                 />
                 <FieldErrors field={field} />
               </Field>
@@ -1042,8 +1149,11 @@ export function TagForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tag">Tag</SelectItem>
-                    <SelectItem value="label">Label</SelectItem>
+                    {Object.entries(tagTypeLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FieldErrors field={field} />

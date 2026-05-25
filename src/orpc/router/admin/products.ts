@@ -5,12 +5,19 @@ import { and, asc, count, desc, eq, like, notInArray, or } from 'drizzle-orm'
 
 import { db } from '#/db'
 import {
+  attributes,
+  attributeValues,
+  productAttributeValues,
   productCategories,
   productImages,
   products,
+  productTags,
   productVariants,
+  collectionProducts,
+  variantAttributeValues,
 } from '#/db/schema'
 import { slugify } from '#/lib/slug'
+import { variantLegacyFieldForAttribute } from '#/lib/variant-option-attributes'
 import { deleteProductImageFile } from '#/lib/uploads/product-images'
 import { requireAdmin } from '#/orpc/lib/require-admin'
 import {
@@ -101,6 +108,21 @@ async function loadProductDetail(productId: string) {
     .from(productCategories)
     .where(eq(productCategories.productId, productId))
 
+  const productTagRows = await db
+    .select({ tagId: productTags.tagId })
+    .from(productTags)
+    .where(eq(productTags.productId, productId))
+
+  const productCollectionRows = await db
+    .select({ collectionId: collectionProducts.collectionId })
+    .from(collectionProducts)
+    .where(eq(collectionProducts.productId, productId))
+
+  const attributeValueRows = await db
+    .select()
+    .from(productAttributeValues)
+    .where(eq(productAttributeValues.productId, productId))
+
   return adminProductDetailSchema.parse({
     id: row.id,
     productType: row.productType,
@@ -112,6 +134,17 @@ async function loadProductDetail(productId: string) {
     brandId: row.brandId ?? null,
     brand: row.brand ?? null,
     categoryIds: categories.map(category => category.categoryId),
+    tagIds: productTagRows.map(tag => tag.tagId),
+    collectionIds: productCollectionRows.map(
+      collection => collection.collectionId,
+    ),
+    attributeValues: attributeValueRows.map(value => ({
+      attributeId: value.attributeId,
+      attributeValueId: value.attributeValueId ?? null,
+      valueText: value.valueText ?? null,
+      valueNumber: value.valueNumber ?? null,
+      valueBoolean: value.valueBoolean ?? null,
+    })),
     metaTitle: row.metaTitle ?? null,
     metaDescription: row.metaDescription ?? null,
     metaKeywords: row.metaKeywords ?? null,
@@ -147,6 +180,144 @@ async function replaceProductCategories(
     uniqueCategoryIds.map(categoryId => ({
       productId,
       categoryId,
+    })),
+  )
+}
+
+async function replaceProductTags(
+  productId: string,
+  tagIds: string[] | undefined,
+) {
+  if (!tagIds) {
+    return
+  }
+
+  await db.delete(productTags).where(eq(productTags.productId, productId))
+
+  const uniqueTagIds = [...new Set(tagIds)]
+  if (uniqueTagIds.length === 0) {
+    return
+  }
+
+  await db.insert(productTags).values(
+    uniqueTagIds.map(tagId => ({
+      productId,
+      tagId,
+    })),
+  )
+}
+
+async function replaceProductCollections(
+  productId: string,
+  collectionIds: string[] | undefined,
+) {
+  if (!collectionIds) {
+    return
+  }
+
+  await db
+    .delete(collectionProducts)
+    .where(eq(collectionProducts.productId, productId))
+
+  const uniqueCollectionIds = [...new Set(collectionIds)]
+  if (uniqueCollectionIds.length === 0) {
+    return
+  }
+
+  await db.insert(collectionProducts).values(
+    uniqueCollectionIds.map((collectionId, index) => ({
+      collectionId,
+      productId,
+      sortOrder: index,
+    })),
+  )
+}
+
+async function replaceVariantAttributeValuesFromLegacy(
+  variantId: string,
+  size: string,
+  color: string,
+) {
+  const optionAttributes = await db
+    .select()
+    .from(attributes)
+    .where(eq(attributes.isVariantOption, true))
+
+  await db
+    .delete(variantAttributeValues)
+    .where(eq(variantAttributeValues.variantId, variantId))
+
+  if (optionAttributes.length === 0) {
+    return
+  }
+
+  const rows: Array<typeof variantAttributeValues.$inferInsert> = []
+
+  for (const attribute of optionAttributes) {
+    const field = variantLegacyFieldForAttribute(attribute)
+    const text = field === 'size' ? size.trim() : field === 'color' ? color.trim() : ''
+
+    if (!text) {
+      continue
+    }
+
+    const [matchedValue] = await db
+      .select({ id: attributeValues.id })
+      .from(attributeValues)
+      .where(
+        and(
+          eq(attributeValues.attributeId, attribute.id),
+          eq(attributeValues.value, text),
+        ),
+      )
+      .limit(1)
+
+    rows.push({
+      variantId,
+      attributeId: attribute.id,
+      attributeValueId: matchedValue?.id ?? null,
+      valueText: matchedValue ? null : text,
+      valueNumber: null,
+      valueBoolean: null,
+      valueJson: null,
+    })
+  }
+
+  if (rows.length > 0) {
+    await db.insert(variantAttributeValues).values(rows)
+  }
+}
+
+async function replaceProductAttributeValues(
+  productId: string,
+  attributeValues: Array<{
+    attributeId: string
+    attributeValueId?: string | null
+    valueText?: string | null
+    valueNumber?: number | null
+    valueBoolean?: boolean | null
+  }> | undefined,
+) {
+  if (!attributeValues) {
+    return
+  }
+
+  await db
+    .delete(productAttributeValues)
+    .where(eq(productAttributeValues.productId, productId))
+
+  if (attributeValues.length === 0) {
+    return
+  }
+
+  await db.insert(productAttributeValues).values(
+    attributeValues.map(value => ({
+      productId,
+      attributeId: value.attributeId,
+      attributeValueId: value.attributeValueId ?? null,
+      valueText: value.valueText ?? null,
+      valueNumber: value.valueNumber ?? null,
+      valueBoolean: value.valueBoolean ?? null,
     })),
   )
 }
@@ -309,6 +480,9 @@ export const create = os
       .returning()
 
     await replaceProductCategories(row!.id, input.categoryIds)
+    await replaceProductTags(row!.id, input.tagIds)
+    await replaceProductCollections(row!.id, input.collectionIds)
+    await replaceProductAttributeValues(row!.id, input.attributeValues)
 
     const detail = await loadProductDetail(row!.id)
     return detail!
@@ -362,6 +536,9 @@ export const update = os
       .where(eq(products.id, input.id))
 
     await replaceProductCategories(input.id, input.data.categoryIds)
+    await replaceProductTags(input.id, input.data.tagIds)
+    await replaceProductCollections(input.id, input.data.collectionIds)
+    await replaceProductAttributeValues(input.id, input.data.attributeValues)
 
     const detail = await loadProductDetail(input.id)
     return detail!
@@ -420,14 +597,29 @@ export const saveVariants = os
         isActive: variant.isActive,
       }
 
-      if (variant.id) {
+      let variantId = variant.id
+
+      if (variantId) {
         await db
           .update(productVariants)
           .set(values)
-          .where(eq(productVariants.id, variant.id))
+          .where(eq(productVariants.id, variantId))
       }
       else {
-        await db.insert(productVariants).values(values)
+        const [inserted] = await db
+          .insert(productVariants)
+          .values(values)
+          .returning({ id: productVariants.id })
+
+        variantId = inserted?.id
+      }
+
+      if (variantId) {
+        await replaceVariantAttributeValuesFromLegacy(
+          variantId,
+          variant.size,
+          variant.color,
+        )
       }
     }
 

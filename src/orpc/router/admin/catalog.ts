@@ -1,6 +1,6 @@
 import type { OrpcContext } from '#/orpc/context'
 import { ORPCError, os } from '@orpc/server'
-import { asc, eq, like, or } from 'drizzle-orm'
+import { and, asc, eq, like, or, type SQL } from 'drizzle-orm'
 
 import { db } from '#/db'
 import {
@@ -8,9 +8,12 @@ import {
   attributeValues,
   brands,
   categories,
+  collectionProducts,
   collections,
+  products,
   tags,
 } from '#/db/schema'
+import { rebuildCategoryClosure } from '#/lib/category-closure'
 import { requireAdmin } from '#/orpc/lib/require-admin'
 import {
   adminAttributeInputSchema,
@@ -20,6 +23,9 @@ import {
   adminCategoryInputSchema,
   adminCategorySchema,
   adminCollectionInputSchema,
+  adminCollectionProductSchema,
+  adminCollectionProductsInputSchema,
+  adminCollectionProductsUpdateSchema,
   adminCollectionSchema,
   adminTagInputSchema,
   adminTagSchema,
@@ -97,10 +103,37 @@ function collectionDto(row: typeof collections.$inferSelect) {
     name: row.name,
     description: row.description ?? null,
     type: row.type,
+    rulesJson: row.rulesJson ?? null,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   })
+}
+
+function catalogListWhere(
+  input: { search?: string, activeOnly?: boolean },
+  searchFilter?: SQL,
+  activeColumn?: SQL,
+) {
+  const filters: SQL[] = []
+
+  if (input.activeOnly && activeColumn) {
+    filters.push(activeColumn)
+  }
+
+  if (searchFilter) {
+    filters.push(searchFilter)
+  }
+
+  if (filters.length === 0) {
+    return undefined
+  }
+
+  if (filters.length === 1) {
+    return filters[0]
+  }
+
+  return and(...filters)
 }
 
 function tagDto(row: typeof tags.$inferSelect) {
@@ -129,7 +162,11 @@ export const listBrands = os
     const rows = await db
       .select()
       .from(brands)
-      .where(search ? or(like(brands.name, `%${search}%`), like(brands.slug, `%${search}%`)) : undefined)
+      .where(catalogListWhere(
+        input,
+        search ? or(like(brands.name, `%${search}%`), like(brands.slug, `%${search}%`)) : undefined,
+        input.activeOnly ? eq(brands.isActive, true) : undefined,
+      ))
       .orderBy(asc(brands.name))
 
     return rows.map(brandDto)
@@ -188,7 +225,11 @@ export const listCategories = os
     const rows = await db
       .select()
       .from(categories)
-      .where(search ? or(like(categories.name, `%${search}%`), like(categories.slug, `%${search}%`)) : undefined)
+      .where(catalogListWhere(
+        input,
+        search ? or(like(categories.name, `%${search}%`), like(categories.slug, `%${search}%`)) : undefined,
+        input.activeOnly ? eq(categories.isActive, true) : undefined,
+      ))
       .orderBy(asc(categories.sortOrder), asc(categories.name))
 
     return rows.map(categoryDto)
@@ -209,6 +250,8 @@ export const createCategory = os
         isActive: input.isActive ?? true,
       })
       .returning()
+
+    await rebuildCategoryClosure()
 
     return categoryDto(row!)
   })
@@ -240,8 +283,10 @@ export const updateCategory = os
       .returning()
 
     if (!row) {
-      throw new ORPCError('NOT_FOUND', { message: 'Category not found.' })
+      throw new ORPCError('NOT_FOUND', { message: 'دسته‌بندی پیدا نشد.' })
     }
+
+    await rebuildCategoryClosure()
 
     return categoryDto(row)
   })
@@ -272,8 +317,10 @@ export const deleteCategory = os
       .returning({ id: categories.id })
 
     if (!row) {
-      throw new ORPCError('NOT_FOUND', { message: 'Category not found.' })
+      throw new ORPCError('NOT_FOUND', { message: 'دسته‌بندی پیدا نشد.' })
     }
+
+    await rebuildCategoryClosure()
 
     return row
   })
@@ -397,7 +444,11 @@ export const listCollections = os
     const rows = await db
       .select()
       .from(collections)
-      .where(search ? or(like(collections.name, `%${search}%`), like(collections.slug, `%${search}%`)) : undefined)
+      .where(catalogListWhere(
+        input,
+        search ? or(like(collections.name, `%${search}%`), like(collections.slug, `%${search}%`)) : undefined,
+        input.activeOnly ? eq(collections.isActive, true) : undefined,
+      ))
       .orderBy(asc(collections.name))
 
     return rows.map(collectionDto)
@@ -474,7 +525,11 @@ export const listTags = os
     const rows = await db
       .select()
       .from(tags)
-      .where(search ? or(like(tags.name, `%${search}%`), like(tags.slug, `%${search}%`)) : undefined)
+      .where(catalogListWhere(
+        input,
+        search ? or(like(tags.name, `%${search}%`), like(tags.slug, `%${search}%`)) : undefined,
+        input.activeOnly ? eq(tags.isActive, true) : undefined,
+      ))
       .orderBy(asc(tags.name))
 
     return rows.map(tagDto)
@@ -537,4 +592,58 @@ export const deleteTag = os
     }
 
     return row
+  })
+
+export const listCollectionProducts = os
+  .input(adminCollectionProductsInputSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+
+    const rows = await db
+      .select({
+        id: products.id,
+        name: products.name,
+        slug: products.slug,
+        sortOrder: collectionProducts.sortOrder,
+      })
+      .from(collectionProducts)
+      .innerJoin(products, eq(collectionProducts.productId, products.id))
+      .where(eq(collectionProducts.collectionId, input.collectionId))
+      .orderBy(asc(collectionProducts.sortOrder), asc(products.name))
+
+    return rows.map(row => adminCollectionProductSchema.parse(row))
+  })
+
+export const setCollectionProducts = os
+  .input(adminCollectionProductsUpdateSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+
+    const [collection] = await db
+      .select({ id: collections.id })
+      .from(collections)
+      .where(eq(collections.id, input.collectionId))
+      .limit(1)
+
+    if (!collection) {
+      throw new ORPCError('NOT_FOUND', { message: 'کالکشن پیدا نشد.' })
+    }
+
+    await db
+      .delete(collectionProducts)
+      .where(eq(collectionProducts.collectionId, input.collectionId))
+
+    const uniqueProductIds = [...new Set(input.productIds)]
+
+    if (uniqueProductIds.length > 0) {
+      await db.insert(collectionProducts).values(
+        uniqueProductIds.map((productId, index) => ({
+          collectionId: input.collectionId,
+          productId,
+          sortOrder: index,
+        })),
+      )
+    }
+
+    return { collectionId: input.collectionId, count: uniqueProductIds.length }
   })

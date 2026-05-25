@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { invalidateCatalogProductQueries } from '#/lib/catalog-invalidation'
 import { orpc } from '#/orpc/client'
 
 import {
@@ -53,6 +54,7 @@ import {
   CollectionsTable,
   TagsTable,
 } from './catalog-tables'
+import { CollectionProductsPanel } from './collection-products-panel'
 
 const searchEmptyMessage = 'موردی با این جستجو پیدا نشد.'
 const defaultEmptyMessage = 'موردی ثبت نشده است.'
@@ -90,9 +92,7 @@ export function BrandsSection() {
   })
   const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
 
-  const invalidate = () => queryClient.invalidateQueries({
-    queryKey: orpc.admin.catalog.listBrands.key(),
-  })
+  const invalidate = () => invalidateCatalogProductQueries(queryClient)
 
   const createMutation = useMutation(
     orpc.admin.catalog.createBrand.mutationOptions({
@@ -213,9 +213,7 @@ export function CategoriesSection() {
     [allCategoriesQuery.data, editing?.id],
   )
 
-  const invalidate = () => queryClient.invalidateQueries({
-    queryKey: orpc.admin.catalog.listCategories.key(),
-  })
+  const invalidate = () => invalidateCatalogProductQueries(queryClient)
   const createMutation = useMutation(
     orpc.admin.catalog.createCategory.mutationOptions({
       onSuccess: async () => {
@@ -322,9 +320,7 @@ export function AttributesSection() {
     placeholderData: keepPreviousData,
   })
   const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
-  const invalidate = () => queryClient.invalidateQueries({
-    queryKey: orpc.admin.catalog.listAttributes.key(),
-  })
+  const invalidate = () => invalidateCatalogProductQueries(queryClient)
   const createMutation = useMutation(
     orpc.admin.catalog.createAttribute.mutationOptions({
       onSuccess: async () => {
@@ -418,6 +414,7 @@ export function AttributesSection() {
 export function CollectionsSection() {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState<AdminCollection | null>(null)
+  const [managingProducts, setManagingProducts] = useState<AdminCollection | null>(null)
   const [deleting, setDeleting] = useState<AdminCollection | null>(null)
   const [open, setOpen] = useState(false)
 
@@ -429,9 +426,7 @@ export function CollectionsSection() {
     placeholderData: keepPreviousData,
   })
   const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
-  const invalidate = () => queryClient.invalidateQueries({
-    queryKey: orpc.admin.catalog.listCollections.key(),
-  })
+  const invalidate = () => invalidateCatalogProductQueries(queryClient)
   const createMutation = useMutation(
     orpc.admin.catalog.createCollection.mutationOptions({
       onSuccess: async () => {
@@ -485,8 +480,16 @@ export function CollectionsSection() {
           setEditing(item)
           setOpen(true)
         }}
+        onManageProducts={setManagingProducts}
         onDelete={setDeleting}
       />
+      {managingProducts?.type === 'manual' && (
+        <CollectionProductsPanel
+          collectionId={managingProducts.id}
+          collectionName={managingProducts.name}
+          collectionType={managingProducts.type}
+        />
+      )}
       <EntityFormDialog
         open={open}
         title={editing ? 'ویرایش کالکشن' : 'کالکشن جدید'}
@@ -536,9 +539,7 @@ export function TagsSection() {
     placeholderData: keepPreviousData,
   })
   const { emptyMessage } = useCatalogListQuery(query.data, query.isPending)
-  const invalidate = () => queryClient.invalidateQueries({
-    queryKey: orpc.admin.catalog.listTags.key(),
-  })
+  const invalidate = () => invalidateCatalogProductQueries(queryClient)
   const createMutation = useMutation(
     orpc.admin.catalog.createTag.mutationOptions({
       onSuccess: async () => {

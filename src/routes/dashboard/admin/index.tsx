@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { adminCatalogNavItems } from '#/lib/admin-catalog-nav'
 import { adminNavItems } from '#/lib/admin-nav'
 import { routeBreadcrumb } from '#/lib/breadcrumb'
 
@@ -43,6 +44,29 @@ function AdminOverviewPage() {
             </Button>
           </Card>
         ))}
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">کاتالوگ</h2>
+        <p className="text-muted-foreground text-sm">
+          قبل از ساخت محصول، دسته‌بندی‌ها و برندها را از این بخش آماده کنید.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {adminCatalogNavItems.map(item => (
+            <Card key={item.to}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <item.icon className="size-5" />
+                  {item.title}
+                </CardTitle>
+                <CardDescription>{item.description}</CardDescription>
+              </CardHeader>
+              <Button asChild variant="outline" className="mx-6 mb-6 w-fit">
+                <Link to={item.to}>ورود</Link>
+              </Button>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   )

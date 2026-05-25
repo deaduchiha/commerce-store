@@ -2,7 +2,7 @@ import type {
   AdminProductDetail,
   AdminProductVariantInput,
 } from '#/orpc/schemas/admin/products'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -24,7 +24,15 @@ import {
   FieldLabel,
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { Switch } from '#/components/ui/switch'
+import { variantLegacyFieldForAttribute } from '#/lib/variant-option-attributes'
 import { orpc } from '#/orpc/client'
 
 function emptyVariant(): AdminProductVariantInput {
@@ -138,6 +146,21 @@ export function ProductVariantsSection({
   const [variants, setVariants] = useState(() => fromDetail(initialVariants))
   const [submitted, setSubmitted] = useState(false)
 
+  const variantOptionsQuery = useQuery(
+    orpc.admin.catalog.listAttributes.queryOptions({
+      input: {},
+    }),
+  )
+  const variantOptionAttributes = (variantOptionsQuery.data ?? []).filter(
+    attribute => attribute.isVariantOption,
+  )
+  const sizeAttribute = variantOptionAttributes.find(
+    attribute => variantLegacyFieldForAttribute(attribute) === 'size',
+  )
+  const colorAttribute = variantOptionAttributes.find(
+    attribute => variantLegacyFieldForAttribute(attribute) === 'color',
+  )
+
   const errors = useMemo(() => validateVariants(variants), [variants])
   const activeCount = variants.filter(variant => variant.isActive).length
   const totalStock = variants.reduce(
@@ -210,6 +233,13 @@ export function ProductVariantsSection({
             <CardTitle>تنوع‌ها (سایز / رنگ)</CardTitle>
             <CardDescription>
               هر ردیف یک SKU قابل فروش با قیمت، موجودی و وضعیت جداگانه است.
+              {variantOptionAttributes.length > 0 && (
+                <>
+                  {' '}
+                  گزینه‌های سایز و رنگ از ویژگی‌های کاتالوگ با پرچم «گزینه تنوع»
+                  خوانده می‌شوند.
+                </>
+              )}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -280,30 +310,86 @@ export function ProductVariantsSection({
 
               <VariantField
                 id={`variant-${index}-size`}
-                label="سایز"
+                label={sizeAttribute?.name ?? 'سایز'}
                 error={submitted ? fieldError(index, 'size') : undefined}
               >
-                <Input
-                  id={`variant-${index}-size`}
-                  value={variant.size}
-                  aria-invalid={submitted && Boolean(fieldError(index, 'size'))}
-                  onChange={event =>
-                    updateVariant(index, { size: event.target.value })}
-                />
+                {sizeAttribute && sizeAttribute.values.length > 0
+                  ? (
+                      <Select
+                        value={variant.size || undefined}
+                        onValueChange={value =>
+                          updateVariant(index, { size: value })}
+                      >
+                        <SelectTrigger
+                          id={`variant-${index}-size`}
+                          aria-invalid={
+                            submitted && Boolean(fieldError(index, 'size'))
+                          }
+                        >
+                          <SelectValue placeholder="انتخاب سایز" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sizeAttribute.values.map(option => (
+                            <SelectItem key={option.id} value={option.value}>
+                              {option.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )
+                  : (
+                      <Input
+                        id={`variant-${index}-size`}
+                        value={variant.size}
+                        aria-invalid={
+                          submitted && Boolean(fieldError(index, 'size'))
+                        }
+                        onChange={event =>
+                          updateVariant(index, { size: event.target.value })}
+                      />
+                    )}
               </VariantField>
 
               <VariantField
                 id={`variant-${index}-color`}
-                label="رنگ"
+                label={colorAttribute?.name ?? 'رنگ'}
                 error={submitted ? fieldError(index, 'color') : undefined}
               >
-                <Input
-                  id={`variant-${index}-color`}
-                  value={variant.color}
-                  aria-invalid={submitted && Boolean(fieldError(index, 'color'))}
-                  onChange={event =>
-                    updateVariant(index, { color: event.target.value })}
-                />
+                {colorAttribute && colorAttribute.values.length > 0
+                  ? (
+                      <Select
+                        value={variant.color || undefined}
+                        onValueChange={value =>
+                          updateVariant(index, { color: value })}
+                      >
+                        <SelectTrigger
+                          id={`variant-${index}-color`}
+                          aria-invalid={
+                            submitted && Boolean(fieldError(index, 'color'))
+                          }
+                        >
+                          <SelectValue placeholder="انتخاب رنگ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {colorAttribute.values.map(option => (
+                            <SelectItem key={option.id} value={option.value}>
+                              {option.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )
+                  : (
+                      <Input
+                        id={`variant-${index}-color`}
+                        value={variant.color}
+                        aria-invalid={
+                          submitted && Boolean(fieldError(index, 'color'))
+                        }
+                        onChange={event =>
+                          updateVariant(index, { color: event.target.value })}
+                      />
+                    )}
               </VariantField>
             </div>
 

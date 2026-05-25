@@ -1,6 +1,7 @@
 import * as address from './address'
 import * as admin from './admin'
 import * as profile from './profile'
+import * as storefront from './storefront'
 import { addTodo, listTodos } from './todos'
 
 export default {
@@ -9,4 +10,5 @@ export default {
   profile,
   address,
   admin,
+  storefront,
 }

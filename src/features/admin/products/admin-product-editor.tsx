@@ -36,6 +36,12 @@ import {
 import { Skeleton } from '#/components/ui/skeleton'
 import { Switch } from '#/components/ui/switch'
 import { Textarea } from '#/components/ui/textarea'
+import {
+  ProductAttributesField,
+  ProductCategoriesField,
+  ProductCollectionsField,
+  ProductTagsField,
+} from '#/features/admin/products/product-catalog-fields'
 import { ProductImagesSection } from '#/features/admin/products/product-images-section'
 import { ProductVariantsSection } from '#/features/admin/products/product-variants-section'
 import { useShowFieldError } from '#/features/settings/components/field-validation'
@@ -86,6 +92,9 @@ function toFormValues(product?: AdminProductDetail) {
     brandId: product?.brandId ?? 'none',
     brand: product?.brand ?? '',
     categoryIds: product?.categoryIds ?? [],
+    tagIds: product?.tagIds ?? [],
+    collectionIds: product?.collectionIds ?? [],
+    attributeValues: product?.attributeValues ?? [],
     shortDescription: product?.shortDescription ?? '',
     description: product?.description ?? '',
     metaJson: formatMetaJson(toMetaValue(product)),
@@ -111,6 +120,9 @@ function toPayload(value: ReturnType<typeof toFormValues>) {
     brandId: value.brandId === 'none' ? '' : value.brandId,
     brand: optionalText(value.brand),
     categoryIds: value.categoryIds,
+    tagIds: value.tagIds,
+    collectionIds: value.collectionIds,
+    attributeValues: value.attributeValues,
     shortDescription: optionalText(value.shortDescription),
     description: optionalText(value.description),
     metaTitle: optionalText(meta.title),
@@ -348,54 +360,45 @@ function ProductSelectField({
   )
 }
 
-function ProductCategoriesField({
+function ProductBrandIdField({
   field,
-  options,
+  brandOptions,
 }: {
   field: AnyFieldApi
-  options: Array<{ id: string, name: string, parentId: string | null }>
+  brandOptions: Array<{ label: string, value: string }>
 }) {
-  const selectedIds = new Set<string>(field.state.value)
   const showError = useShowFieldError(field)
 
-  function toggleCategory(categoryId: string) {
-    const nextIds = selectedIds.has(categoryId)
-      ? field.state.value.filter((id: string) => id !== categoryId)
-      : [...field.state.value, categoryId]
-
-    field.handleChange(nextIds)
-  }
-
   return (
-    <Field data-invalid={showError} className="md:col-span-2">
-      <FieldLabel>دسته‌بندی‌ها</FieldLabel>
+    <Field data-invalid={showError}>
+      <FieldLabel htmlFor={field.name}>برند ثبت‌شده</FieldLabel>
       <FieldDescription>
-        محصول می‌تواند در چند دسته و زیرمجموعه هم‌زمان قرار بگیرد.
+        برندهای حرفه‌ای را از
+        {' '}
+        <Link
+          to="/dashboard/admin/catalog/brands"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          بخش کاتالوگ
+        </Link>
+        {' '}
+        مدیریت کنید.
       </FieldDescription>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {options.length === 0
-          ? (
-              <div className="text-muted-foreground border p-3 text-sm">
-                ابتدا از بخش کاتالوگ دسته‌بندی بسازید.
-              </div>
-            )
-          : options.map(category => (
-              <button
-                key={category.id}
-                type="button"
-                data-selected={selectedIds.has(category.id)}
-                className="flex min-h-11 items-center justify-between gap-2 border bg-background px-3 py-2 text-start text-sm transition-colors hover:bg-muted/50 data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
-                onClick={() => toggleCategory(category.id)}
-              >
-                <span>{category.name}</span>
-                {selectedIds.has(category.id) && (
-                  <span className="text-primary text-xs font-medium">
-                    انتخاب شده
-                  </span>
-                )}
-              </button>
-            ))}
-      </div>
+      <Select
+        value={String(field.state.value)}
+        onValueChange={field.handleChange}
+      >
+        <SelectTrigger id={field.name} className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {brandOptions.map(option => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {showError && <FieldError errors={field.state.meta.errors} />}
     </Field>
   )
@@ -497,9 +500,18 @@ function ProductEditorForm({
 }: ProductEditorFormProps) {
   const initialMetaJson = formatMetaJson(toMetaValue(product))
   const brandsQuery = useQuery(orpc.admin.catalog.listBrands.queryOptions({
-    input: {},
+    input: { activeOnly: true },
   }))
   const categoriesQuery = useQuery(orpc.admin.catalog.listCategories.queryOptions({
+    input: { activeOnly: true },
+  }))
+  const tagsQuery = useQuery(orpc.admin.catalog.listTags.queryOptions({
+    input: { activeOnly: true },
+  }))
+  const collectionsQuery = useQuery(orpc.admin.catalog.listCollections.queryOptions({
+    input: { activeOnly: true },
+  }))
+  const attributesQuery = useQuery(orpc.admin.catalog.listAttributes.queryOptions({
     input: {},
   }))
 
@@ -614,11 +626,9 @@ function ProductEditorForm({
 
             <form.Field name="brandId">
               {field => (
-                <ProductSelectField
+                <ProductBrandIdField
                   field={field}
-                  label="برند ثبت‌شده"
-                  description="برندهای حرفه‌ای را از بخش کاتالوگ مدیریت کنید."
-                  options={brandOptions}
+                  brandOptions={brandOptions}
                 />
               )}
             </form.Field>
@@ -638,6 +648,33 @@ function ProductEditorForm({
                 <ProductCategoriesField
                   field={field}
                   options={categoriesQuery.data ?? []}
+                />
+              )}
+            </form.Field>
+
+            <form.Field name="tagIds">
+              {field => (
+                <ProductTagsField
+                  field={field}
+                  options={tagsQuery.data ?? []}
+                />
+              )}
+            </form.Field>
+
+            <form.Field name="collectionIds">
+              {field => (
+                <ProductCollectionsField
+                  field={field}
+                  options={collectionsQuery.data ?? []}
+                />
+              )}
+            </form.Field>
+
+            <form.Field name="attributeValues">
+              {field => (
+                <ProductAttributesField
+                  field={field}
+                  attributes={attributesQuery.data ?? []}
                 />
               )}
             </form.Field>
