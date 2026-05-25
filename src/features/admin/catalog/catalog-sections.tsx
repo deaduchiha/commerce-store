@@ -5,13 +5,6 @@ import type {
   AdminCollection,
   AdminTag,
 } from '#/orpc/schemas/admin/catalog'
-import type {
-  AttributeFormValue,
-  BrandFormValue,
-  CategoryFormValue,
-  CollectionFormValue,
-  TagFormValue,
-} from './catalog-types'
 import {
   keepPreviousData,
   useMutation,
@@ -23,16 +16,13 @@ import { toast } from 'sonner'
 
 import { useCatalogSearch } from '#/components/admin/catalog/catalog-search-context'
 
-import { Button } from '#/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
-import { slugify } from '#/lib/slug'
 import { orpc } from '#/orpc/client'
 
 import {
@@ -85,26 +75,8 @@ function useCatalogListQuery<T extends Array<unknown>>(
   }
 }
 
-function optionalText(value: string) {
-  const trimmed = value.trim()
-  return trimmed || undefined
-}
-
-function attributeValuesFromText(valuesText: string) {
-  return valuesText
-    .split('\n')
-    .map(value => value.trim())
-    .filter(Boolean)
-    .map((value, index) => ({
-      value,
-      slug: slugify(value),
-      sortOrder: index,
-    }))
-}
-
 export function BrandsSection() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<BrandFormValue>(emptyBrandForm)
   const [editing, setEditing] = useState<AdminBrand | null>(null)
   const [deleting, setDeleting] = useState<AdminBrand | null>(null)
   const [open, setOpen] = useState(false)
@@ -156,24 +128,6 @@ export function BrandsSection() {
   function closeForm() {
     setOpen(false)
     setEditing(null)
-    setForm(emptyBrandForm)
-  }
-
-  function handleSubmit() {
-    const data = {
-      name: form.name,
-      slug: form.slug,
-      description: optionalText(form.description),
-      websiteUrl: optionalText(form.websiteUrl),
-      isActive: form.isActive,
-    }
-
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, data })
-      return
-    }
-
-    createMutation.mutate(data)
   }
 
   return (
@@ -182,7 +136,6 @@ export function BrandsSection() {
         createLabel="برند جدید"
         onCreate={() => {
           setEditing(null)
-          setForm(emptyBrandForm)
           setOpen(true)
         }}
       />
@@ -192,7 +145,6 @@ export function BrandsSection() {
         emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
-          setForm(brandToForm(item))
           setOpen(true)
         }}
         onDelete={setDeleting}
@@ -201,8 +153,6 @@ export function BrandsSection() {
         open={open}
         title={editing ? 'ویرایش برند' : 'برند جدید'}
         description="برندها به محصولات وصل می‌شوند و در فیلتر فروشگاه قابل استفاده‌اند."
-        isSaving={createMutation.isPending || updateMutation.isPending}
-        canSubmit={Boolean(form.name && form.slug)}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
             closeForm()
@@ -210,14 +160,16 @@ export function BrandsSection() {
           }
           setOpen(true)
         }}
-        onSubmit={handleSubmit}
       >
         <BrandForm
-          value={form}
-          onChange={next => setForm({
-            ...next,
-            slug: form.slug || slugify(next.name),
-          })}
+          key={editing?.id ?? 'create-brand'}
+          defaultValues={editing ? brandToForm(editing) : emptyBrandForm}
+          isSaving={createMutation.isPending || updateMutation.isPending}
+          onCancel={closeForm}
+          onSubmit={data =>
+            editing
+              ? updateMutation.mutateAsync({ id: editing.id, data })
+              : createMutation.mutateAsync(data)}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -234,7 +186,6 @@ export function BrandsSection() {
 
 export function CategoriesSection() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<CategoryFormValue>(emptyCategoryForm)
   const [editing, setEditing] = useState<AdminCategory | null>(null)
   const [deleting, setDeleting] = useState<AdminCategory | null>(null)
   const [open, setOpen] = useState(false)
@@ -299,25 +250,6 @@ export function CategoriesSection() {
   function closeForm() {
     setOpen(false)
     setEditing(null)
-    setForm(emptyCategoryForm)
-  }
-
-  function handleSubmit() {
-    const data = {
-      name: form.name,
-      slug: form.slug,
-      parentId: form.parentId === 'none' ? null : form.parentId,
-      description: optionalText(form.description),
-      sortOrder: form.sortOrder,
-      isActive: form.isActive,
-    }
-
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, data })
-      return
-    }
-
-    createMutation.mutate(data)
   }
 
   return (
@@ -326,7 +258,6 @@ export function CategoriesSection() {
         createLabel="دسته‌بندی جدید"
         onCreate={() => {
           setEditing(null)
-          setForm(emptyCategoryForm)
           setOpen(true)
         }}
       />
@@ -337,7 +268,6 @@ export function CategoriesSection() {
         emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
-          setForm(categoryToForm(item))
           setOpen(true)
         }}
         onDelete={setDeleting}
@@ -346,8 +276,6 @@ export function CategoriesSection() {
         open={open}
         title={editing ? 'ویرایش دسته‌بندی' : 'دسته‌بندی جدید'}
         description="برای ساخت زیرمجموعه، دسته والد را انتخاب کنید."
-        isSaving={createMutation.isPending || updateMutation.isPending}
-        canSubmit={Boolean(form.name && form.slug)}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
             closeForm()
@@ -355,15 +283,17 @@ export function CategoriesSection() {
           }
           setOpen(true)
         }}
-        onSubmit={handleSubmit}
       >
         <CategoryForm
-          value={form}
+          key={editing?.id ?? 'create-category'}
+          defaultValues={editing ? categoryToForm(editing) : emptyCategoryForm}
           parentOptions={parentOptions}
-          onChange={next => setForm({
-            ...next,
-            slug: form.slug || slugify(next.name),
-          })}
+          isSaving={createMutation.isPending || updateMutation.isPending}
+          onCancel={closeForm}
+          onSubmit={data =>
+            editing
+              ? updateMutation.mutateAsync({ id: editing.id, data })
+              : createMutation.mutateAsync(data)}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -380,7 +310,6 @@ export function CategoriesSection() {
 
 export function AttributesSection() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<AttributeFormValue>(emptyAttributeForm)
   const [editing, setEditing] = useState<AdminAttribute | null>(null)
   const [deleting, setDeleting] = useState<AdminAttribute | null>(null)
   const [open, setOpen] = useState(false)
@@ -430,28 +359,6 @@ export function AttributesSection() {
   function closeForm() {
     setOpen(false)
     setEditing(null)
-    setForm(emptyAttributeForm)
-  }
-
-  function handleSubmit() {
-    const data = {
-      name: form.name,
-      code: form.code,
-      type: form.type,
-      scope: form.scope,
-      unit: optionalText(form.unit),
-      isFilterable: form.isFilterable,
-      isVariantOption: form.isVariantOption,
-      isRequired: form.isRequired,
-      values: attributeValuesFromText(form.valuesText),
-    }
-
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, data })
-      return
-    }
-
-    createMutation.mutate(data)
   }
 
   return (
@@ -460,7 +367,6 @@ export function AttributesSection() {
         createLabel="ویژگی جدید"
         onCreate={() => {
           setEditing(null)
-          setForm(emptyAttributeForm)
           setOpen(true)
         }}
       />
@@ -470,7 +376,6 @@ export function AttributesSection() {
         emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
-          setForm(attributeToForm(item))
           setOpen(true)
         }}
         onDelete={setDeleting}
@@ -479,8 +384,6 @@ export function AttributesSection() {
         open={open}
         title={editing ? 'ویرایش ویژگی' : 'ویژگی جدید'}
         description="ویژگی‌ها پایه فیلترها و ترکیب تنوع‌های محصول هستند."
-        isSaving={createMutation.isPending || updateMutation.isPending}
-        canSubmit={Boolean(form.name && form.code)}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
             closeForm()
@@ -488,14 +391,16 @@ export function AttributesSection() {
           }
           setOpen(true)
         }}
-        onSubmit={handleSubmit}
       >
         <AttributeForm
-          value={form}
-          onChange={next => setForm({
-            ...next,
-            code: form.code || slugify(next.name).replaceAll('-', '_'),
-          })}
+          key={editing?.id ?? 'create-attribute'}
+          defaultValues={editing ? attributeToForm(editing) : emptyAttributeForm}
+          isSaving={createMutation.isPending || updateMutation.isPending}
+          onCancel={closeForm}
+          onSubmit={data =>
+            editing
+              ? updateMutation.mutateAsync({ id: editing.id, data })
+              : createMutation.mutateAsync(data)}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -512,7 +417,6 @@ export function AttributesSection() {
 
 export function CollectionsSection() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<CollectionFormValue>(emptyCollectionForm)
   const [editing, setEditing] = useState<AdminCollection | null>(null)
   const [deleting, setDeleting] = useState<AdminCollection | null>(null)
   const [open, setOpen] = useState(false)
@@ -562,24 +466,6 @@ export function CollectionsSection() {
   function closeForm() {
     setOpen(false)
     setEditing(null)
-    setForm(emptyCollectionForm)
-  }
-
-  function handleSubmit() {
-    const data = {
-      name: form.name,
-      slug: form.slug,
-      type: form.type,
-      description: optionalText(form.description),
-      isActive: form.isActive,
-    }
-
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, data })
-      return
-    }
-
-    createMutation.mutate(data)
   }
 
   return (
@@ -588,7 +474,6 @@ export function CollectionsSection() {
         createLabel="کالکشن جدید"
         onCreate={() => {
           setEditing(null)
-          setForm(emptyCollectionForm)
           setOpen(true)
         }}
       />
@@ -598,7 +483,6 @@ export function CollectionsSection() {
         emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
-          setForm(collectionToForm(item))
           setOpen(true)
         }}
         onDelete={setDeleting}
@@ -607,8 +491,6 @@ export function CollectionsSection() {
         open={open}
         title={editing ? 'ویرایش کالکشن' : 'کالکشن جدید'}
         description="کالکشن‌ها برای صفحات کمپین، فصل، پیشنهاد ویژه و گروه‌بندی دستی محصولات هستند."
-        isSaving={createMutation.isPending || updateMutation.isPending}
-        canSubmit={Boolean(form.name && form.slug)}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
             closeForm()
@@ -616,14 +498,16 @@ export function CollectionsSection() {
           }
           setOpen(true)
         }}
-        onSubmit={handleSubmit}
       >
         <CollectionForm
-          value={form}
-          onChange={next => setForm({
-            ...next,
-            slug: form.slug || slugify(next.name),
-          })}
+          key={editing?.id ?? 'create-collection'}
+          defaultValues={editing ? collectionToForm(editing) : emptyCollectionForm}
+          isSaving={createMutation.isPending || updateMutation.isPending}
+          onCancel={closeForm}
+          onSubmit={data =>
+            editing
+              ? updateMutation.mutateAsync({ id: editing.id, data })
+              : createMutation.mutateAsync(data)}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -640,7 +524,6 @@ export function CollectionsSection() {
 
 export function TagsSection() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<TagFormValue>(emptyTagForm)
   const [editing, setEditing] = useState<AdminTag | null>(null)
   const [deleting, setDeleting] = useState<AdminTag | null>(null)
   const [open, setOpen] = useState(false)
@@ -690,24 +573,6 @@ export function TagsSection() {
   function closeForm() {
     setOpen(false)
     setEditing(null)
-    setForm(emptyTagForm)
-  }
-
-  function handleSubmit() {
-    const data = {
-      name: form.name,
-      slug: form.slug,
-      type: form.type,
-      color: optionalText(form.color),
-      isActive: form.isActive,
-    }
-
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, data })
-      return
-    }
-
-    createMutation.mutate(data)
   }
 
   return (
@@ -716,7 +581,6 @@ export function TagsSection() {
         createLabel="تگ جدید"
         onCreate={() => {
           setEditing(null)
-          setForm(emptyTagForm)
           setOpen(true)
         }}
       />
@@ -726,7 +590,6 @@ export function TagsSection() {
         emptyMessage={emptyMessage}
         onEdit={(item) => {
           setEditing(item)
-          setForm(tagToForm(item))
           setOpen(true)
         }}
         onDelete={setDeleting}
@@ -735,8 +598,6 @@ export function TagsSection() {
         open={open}
         title={editing ? 'ویرایش تگ' : 'تگ جدید'}
         description="از لیبل برای Featured، New، Discounted و نشان‌های محصول استفاده کنید."
-        isSaving={createMutation.isPending || updateMutation.isPending}
-        canSubmit={Boolean(form.name && form.slug)}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
             closeForm()
@@ -744,14 +605,16 @@ export function TagsSection() {
           }
           setOpen(true)
         }}
-        onSubmit={handleSubmit}
       >
         <TagForm
-          value={form}
-          onChange={next => setForm({
-            ...next,
-            slug: form.slug || slugify(next.name),
-          })}
+          key={editing?.id ?? 'create-tag'}
+          defaultValues={editing ? tagToForm(editing) : emptyTagForm}
+          isSaving={createMutation.isPending || updateMutation.isPending}
+          onCancel={closeForm}
+          onSubmit={data =>
+            editing
+              ? updateMutation.mutateAsync({ id: editing.id, data })
+              : createMutation.mutateAsync(data)}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -770,19 +633,13 @@ function EntityFormDialog({
   open,
   title,
   description,
-  canSubmit,
-  isSaving,
   onOpenChange,
-  onSubmit,
   children,
 }: {
   open: boolean
   title: string
   description: string
-  canSubmit: boolean
-  isSaving: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: () => void
   children: React.ReactNode
 }) {
   return (
@@ -793,22 +650,6 @@ function EntityFormDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         {children}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            انصراف
-          </Button>
-          <Button
-            type="button"
-            disabled={isSaving || !canSubmit}
-            onClick={onSubmit}
-          >
-            ذخیره
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
