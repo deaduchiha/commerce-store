@@ -530,7 +530,7 @@ export const productImages = sqliteTable(
   ],
 )
 
-/** Size/color stock unit — price in Iranian Rial (integer, no decimals). */
+/** Sellable SKU — options (size, color, …) live in variant_attribute_values. */
 export const productVariants = sqliteTable(
   'product_variants',
   {
@@ -541,8 +541,6 @@ export const productVariants = sqliteTable(
     sku: text('sku').notNull().unique(),
     title: text('title'),
     barcode: text('barcode'),
-    size: text('size').notNull(),
-    color: text('color').notNull(),
     priceInRials: integer('price_in_rials').notNull(),
     compareAtPriceInRials: integer('compare_at_price_in_rials'),
     stockQuantity: integer('stock_quantity').notNull().default(0),
@@ -561,11 +559,6 @@ export const productVariants = sqliteTable(
   table => [
     index('product_variants_product_id_idx').on(table.productId),
     index('product_variants_default_media_idx').on(table.defaultMediaId),
-    uniqueIndex('product_variants_product_size_color_uidx').on(
-      table.productId,
-      table.size,
-      table.color,
-    ),
   ],
 )
 

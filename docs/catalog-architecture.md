@@ -86,21 +86,25 @@ Product APIs stay under `admin.products` and carry normalized catalog fields:
 - Money is stored as integer minor units per `currency_code`.
 - Media is stored once in `media_assets` and attached through join tables.
 
+## Variants and options
+
+- **`product_variants`**: sellable SKU (price, stock, active flag). No duplicated size/color columns.
+- **`variant_attribute_values`**: chosen catalog options per variant (size, color, …) from attributes marked `is_variant_option`.
+- **`product_attribute_values`**: product-level facts (gender, material, season) shared by all SKUs.
+
 ## Migration Path
 
-The legacy fields remain available during migration:
+Legacy fields still in use elsewhere:
 
 - `product_images.path`
-- `product_variants.size`
-- `product_variants.color`
-- `product_variants.price_in_rials`
-- `product_variants.stock_quantity`
+- `product_variants.price_in_rials` / `stock_quantity` (until `variant_prices` / `inventory_items` fully adopted)
+- `order_items.size` / `order_items.color` (order snapshots; resolve from variant options at checkout)
 
-New code should prefer:
+Prefer for new code:
 
 - `brands` + `products.brand_id`
 - `media_assets` + `product_images.media_id` / `variant_media`
-- `attributes` + `variant_attribute_values`
+- `attributes` + `variant_attribute_values` for variant options
 - `variant_prices`
 - `inventory_items`
 

@@ -9,12 +9,25 @@ export const adminProductImageSchema = z.object({
   createdAt: z.string(),
 })
 
+export const adminVariantOptionValueSchema = z.object({
+  attributeId: z.string(),
+  attributeValueId: z.string(),
+  attributeCode: z.string(),
+  attributeName: z.string(),
+  value: z.string(),
+  colorHex: z.string().nullable(),
+})
+
+export const adminVariantOptionInputSchema = z.object({
+  attributeId: z.string().min(1),
+  attributeValueId: z.string().min(1),
+})
+
 export const adminProductVariantSchema = z.object({
   id: z.string(),
   productId: z.string(),
   sku: z.string(),
-  size: z.string(),
-  color: z.string(),
+  optionValues: z.array(adminVariantOptionValueSchema),
   priceInRials: z.number().int().min(0),
   compareAtPriceInRials: z.number().int().min(0).nullable(),
   stockQuantity: z.number().int().min(0),
@@ -179,8 +192,7 @@ export const adminProductInputSchema = z.object({
 export const adminProductVariantInputSchema = z.object({
   id: z.string().optional(),
   sku: z.string().trim().min(1).max(64),
-  size: z.string().trim().min(1).max(32),
-  color: z.string().trim().min(1).max(64),
+  optionValues: z.array(adminVariantOptionInputSchema).min(1),
   priceInRials: z.number().int().min(0),
   compareAtPriceInRials: z.number().int().min(0).nullable().optional(),
   stockQuantity: z.number().int().min(0),
@@ -202,6 +214,9 @@ export type AdminProductImage = z.infer<typeof adminProductImageSchema>
 export type AdminProductListItem = z.infer<typeof adminProductListItemSchema>
 export type AdminProductList = z.infer<typeof adminProductListSchema>
 export type AdminProductMeta = z.infer<typeof adminProductMetaSchema>
+export type AdminVariantOptionInput = z.infer<
+  typeof adminVariantOptionInputSchema
+>
 export type AdminProductVariantInput = z.infer<
   typeof adminProductVariantInputSchema
 >

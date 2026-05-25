@@ -1,12 +1,11 @@
 import type { z } from 'zod'
+import type { VariantOptionValue } from '#/lib/variant-options'
 import type { OrpcContext } from '#/orpc/context'
 import { ORPCError, os } from '@orpc/server'
-import { and, asc, count, desc, eq, exists, like, notInArray, or } from 'drizzle-orm'
 
+import { and, asc, count, desc, eq, exists, like, notInArray, or } from 'drizzle-orm'
 import { db } from '#/db'
 import {
-  attributes,
-  attributeValues,
   brands,
   collectionProducts,
   productAttributeValues,
@@ -15,11 +14,18 @@ import {
   products,
   productTags,
   productVariants,
-  variantAttributeValues,
 } from '#/db/schema'
 import { slugify } from '#/lib/slug'
 import { deleteProductImageFile } from '#/lib/uploads/product-images'
-import { variantLegacyFieldForAttribute } from '#/lib/variant-option-attributes'
+import {
+  optionSignature,
+  validateVariantOptionInputs,
+} from '#/lib/variant-options'
+import {
+  listVariantOptionAttributeIds,
+  loadVariantOptionsByVariantIds,
+  replaceVariantOptions,
+} from '#/lib/variant-options.server'
 import { requireAdmin } from '#/orpc/lib/require-admin'
 import {
   adminProductDetailSchema,
@@ -47,13 +53,15 @@ function toProductImage(row: typeof productImages.$inferSelect) {
   }
 }
 
-function toProductVariant(row: typeof productVariants.$inferSelect) {
+function toProductVariant(
+  row: typeof productVariants.$inferSelect,
+  optionValues: VariantOptionValue[],
+) {
   return {
     id: row.id,
     productId: row.productId,
     sku: row.sku,
-    size: row.size,
-    color: row.color,
+    optionValues,
     priceInRials: row.priceInRials,
     compareAtPriceInRials: row.compareAtPriceInRials ?? null,
     stockQuantity: row.stockQuantity,
@@ -104,6 +112,10 @@ async function loadProductDetail(productId: string) {
     .where(eq(productVariants.productId, productId))
     .orderBy(asc(productVariants.createdAt))
 
+  const optionsByVariant = await loadVariantOptionsByVariantIds(
+    variants.map(variant => variant.id),
+  )
+
   const categories = await db
     .select({ categoryId: productCategories.categoryId })
     .from(productCategories)
@@ -152,7 +164,9 @@ async function loadProductDetail(productId: string) {
     isDigital: row.isDigital,
     isActive: row.isActive,
     images: images.map(toProductImage),
-    variants: variants.map(toProductVariant),
+    variants: variants.map(variant =>
+      toProductVariant(variant, optionsByVariant.get(variant.id) ?? []),
+    ),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   })
@@ -231,61 +245,6 @@ async function replaceProductCollections(
       sortOrder: index,
     })),
   )
-}
-
-async function replaceVariantAttributeValuesFromLegacy(
-  variantId: string,
-  size: string,
-  color: string,
-) {
-  const optionAttributes = await db
-    .select()
-    .from(attributes)
-    .where(eq(attributes.isVariantOption, true))
-
-  await db
-    .delete(variantAttributeValues)
-    .where(eq(variantAttributeValues.variantId, variantId))
-
-  if (optionAttributes.length === 0) {
-    return
-  }
-
-  const rows: Array<typeof variantAttributeValues.$inferInsert> = []
-
-  for (const attribute of optionAttributes) {
-    const field = variantLegacyFieldForAttribute(attribute)
-    const text = field === 'size' ? size.trim() : field === 'color' ? color.trim() : ''
-
-    if (!text) {
-      continue
-    }
-
-    const [matchedValue] = await db
-      .select({ id: attributeValues.id })
-      .from(attributeValues)
-      .where(
-        and(
-          eq(attributeValues.attributeId, attribute.id),
-          eq(attributeValues.value, text),
-        ),
-      )
-      .limit(1)
-
-    rows.push({
-      variantId,
-      attributeId: attribute.id,
-      attributeValueId: matchedValue?.id ?? null,
-      valueText: matchedValue ? null : text,
-      valueNumber: null,
-      valueBoolean: null,
-      valueJson: null,
-    })
-  }
-
-  if (rows.length > 0) {
-    await db.insert(variantAttributeValues).values(rows)
-  }
 }
 
 async function replaceProductAttributeValues(
@@ -583,6 +542,24 @@ export const saveVariants = os
       })
     }
 
+    const optionAttributeIds = await listVariantOptionAttributeIds()
+    const optionErrors = validateVariantOptionInputs(
+      optionAttributeIds,
+      input.variants,
+    )
+    if (optionErrors.length > 0) {
+      throw new ORPCError('BAD_REQUEST', { message: optionErrors[0] })
+    }
+
+    const signatures = input.variants.map(variant =>
+      optionSignature(variant.optionValues),
+    )
+    if (new Set(signatures).size !== signatures.length) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'دو تنوع با همان سایز و رنگ مجاز نیست.',
+      })
+    }
+
     const keptIds = input.variants
       .map(v => v.id)
       .filter((id): id is string => Boolean(id))
@@ -605,8 +582,6 @@ export const saveVariants = os
       const values = {
         productId: input.productId,
         sku: variant.sku,
-        size: variant.size,
-        color: variant.color,
         priceInRials: variant.priceInRials,
         compareAtPriceInRials: variant.compareAtPriceInRials ?? null,
         stockQuantity: variant.stockQuantity,
@@ -631,11 +606,7 @@ export const saveVariants = os
       }
 
       if (variantId) {
-        await replaceVariantAttributeValuesFromLegacy(
-          variantId,
-          variant.size,
-          variant.color,
-        )
+        await replaceVariantOptions(variantId, variant.optionValues)
       }
     }
 
