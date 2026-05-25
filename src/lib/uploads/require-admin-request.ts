@@ -1,4 +1,4 @@
-import { auth } from '#/lib/auth'
+import { auth } from '#/lib/auth.server'
 import { hasMinRole } from '#/lib/roles'
 
 export async function requireAdminRequest(request: Request) {

@@ -1,4 +1,4 @@
-import type { Session } from '#/lib/auth'
+import type { Session } from '#/lib/auth.types'
 import type { UserRole } from '#/lib/roles'
 import { ORPCError } from '@orpc/server'
 import { satisfiesRoleRequirement } from '#/lib/roles'
