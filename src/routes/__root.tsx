@@ -7,11 +7,12 @@ import {
   Scripts,
 } from '@tanstack/react-router'
 // import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+// import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import { Button } from '#/components/ui/button'
 import { DirectionProvider } from '#/components/ui/direction'
 import { Toaster } from '#/components/ui/sonner'
 import { TooltipProvider } from '#/components/ui/tooltip'
-// import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
+import { ThemeProvider } from '@/components/theme-provider'
 import appCss from '../styles.css?url'
 
 interface MyRouterContext {
@@ -59,17 +60,19 @@ function NotFound() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="fa" dir="rtl" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body dir="rtl">
-        <DirectionProvider dir="rtl" direction="rtl">
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
-        </DirectionProvider>
-        <Toaster style={{ fontFamily: 'unset' }} theme="light" richColors />
+        <ThemeProvider defaultTheme="system" storageKey="theme">
+          <DirectionProvider dir="rtl" direction="rtl">
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </DirectionProvider>
+          <Toaster style={{ fontFamily: 'unset' }} richColors position="top-right" />
+        </ThemeProvider>
         {/* <TanStackDevtools
           config={{
             position: 'bottom-right',

@@ -3,6 +3,7 @@ import type { UserRole } from '#/lib/roles'
 
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { LayoutDashboard, LogOut, User } from 'lucide-react'
+import { ModeToggle } from '#/components/mode-toggle'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Button } from '#/components/ui/button'
 import {
@@ -179,10 +180,10 @@ export function AppSidebar({ session }: AppSidebarProps) {
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
+          <div className="flex gap-4">
             <Button
               variant="destructive"
-              className="w-full"
+              className="flex-1"
               onClick={() => {
                 void authClient.signOut({
                   fetchOptions: {
@@ -194,9 +195,11 @@ export function AppSidebar({ session }: AppSidebarProps) {
               }}
             >
               <LogOut />
-              <span>خروج از حساب کاربری</span>
+              <span>خروج</span>
             </Button>
-          </SidebarMenuItem>
+
+            <ModeToggle />
+          </div>
         </SidebarMenu>
       </SidebarFooter>
 
