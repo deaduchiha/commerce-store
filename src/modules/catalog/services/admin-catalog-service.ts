@@ -53,8 +53,6 @@ function emptyToNull(value: string | undefined) {
   return trimmed || null
 }
 
-type AttributeValueInput = NonNullable<AttributeInput['values']>[number]
-
 async function syncAttributeValues(
   attributeId: string,
   incoming: NonNullable<AttributeInput['values']>,

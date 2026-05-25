@@ -1,4 +1,5 @@
 import type { AnyFieldApi } from '@tanstack/react-form'
+import type { LucideIcon } from 'lucide-react'
 import type {
   AdminProductDetail,
   AdminProductMeta,
@@ -6,10 +7,21 @@ import type {
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowRight, Braces, RotateCcw, Save, WandSparkles } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowRight,
+  Braces,
+  CheckCircle2,
+  ImagePlus,
+  PackageCheck,
+  RotateCcw,
+  Save,
+  WandSparkles,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { AdminPageHeader } from '#/components/admin/admin-page-header'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
   Card,
@@ -371,13 +383,13 @@ function ProductBrandIdField({
     <Field data-invalid={showError}>
       <FieldLabel htmlFor={field.name}>برند ثبت‌شده</FieldLabel>
       <FieldDescription>
-        برندهای حرفه‌ای را از
+        برندهای خود را در
         {' '}
         <Link
           to="/dashboard/admin/catalog/brands"
           className="text-primary underline-offset-4 hover:underline"
         >
-          بخش کاتالوگ
+          برندها
         </Link>
         {' '}
         مدیریت کنید.
@@ -479,6 +491,142 @@ function ProductMetaJsonField({
   )
 }
 
+function SectionIntro({
+  title,
+  description,
+}: {
+  title: string
+  description?: string
+}) {
+  return (
+    <div className="space-y-1">
+      <h2 className="text-base font-semibold">{title}</h2>
+      {description && (
+        <p className="text-muted-foreground text-sm leading-6">
+          {description}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function CreateModeLockedSection({
+  title,
+  description,
+  icon: Icon,
+}: {
+  title: string
+  description: string
+  icon: LucideIcon
+}) {
+  return (
+    <Card className="border-dashed bg-muted/20">
+      <CardContent className="flex items-start gap-3 py-4">
+        <span className="flex size-10 shrink-0 items-center justify-center border bg-background">
+          <Icon className="size-4" />
+        </span>
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium">{title}</h3>
+          <p className="text-muted-foreground text-sm leading-6">
+            {description}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ProductReadinessPanel({
+  mode,
+  product,
+  values,
+}: {
+  mode: 'create' | 'edit'
+  product?: AdminProductDetail
+  values: ReturnType<typeof toFormValues>
+}) {
+  const meta = (() => {
+    try {
+      return parseMetaJson(values.metaJson)
+    }
+    catch {
+      return { title: '', description: '', keywords: '' }
+    }
+  })()
+  const imageCount = product?.images.length ?? 0
+  const variantCount = product?.variants.length ?? 0
+  const totalStock = product?.variants.reduce(
+    (sum, variant) => sum + variant.stockQuantity,
+    0,
+  ) ?? 0
+
+  const items = [
+    {
+      label: 'تصویر',
+      ok: imageCount > 0,
+      value: imageCount > 0 ? `${imageCount.toLocaleString('fa-IR')} تصویر` : 'ندارد',
+    },
+    {
+      label: 'تنوع و قیمت',
+      ok: variantCount > 0,
+      value: variantCount > 0 ? `${variantCount.toLocaleString('fa-IR')} SKU` : 'بعد از ذخیره',
+    },
+    {
+      label: 'موجودی',
+      ok: totalStock > 0,
+      value: totalStock > 0 ? totalStock.toLocaleString('fa-IR') : 'ناموجود',
+    },
+    {
+      label: 'دسته‌بندی',
+      ok: values.categoryIds.length > 0,
+      value: values.categoryIds.length > 0 ? 'انتخاب شده' : 'انتخاب نشده',
+    },
+    {
+      label: 'سئو',
+      ok: Boolean(meta.title && meta.description),
+      value: meta.title && meta.description ? 'کامل' : 'ناقص',
+    },
+  ]
+
+  return (
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle>آمادگی محصول</CardTitle>
+        <CardDescription>
+          وضعیت سریع برای انتشار در فروشگاه
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="text-muted-foreground text-sm">وضعیت انتشار</span>
+          <Badge variant={values.status === 'active' ? 'default' : 'secondary'}>
+            {productStatusOptions.find(option => option.value === values.status)?.label}
+          </Badge>
+        </div>
+        {items.map(item => (
+          <div
+            key={item.label}
+            className="flex items-center justify-between gap-3 text-sm"
+          >
+            <span className="flex items-center gap-2">
+              {item.ok
+                ? <CheckCircle2 className="text-primary size-4" />
+                : <AlertCircle className="text-muted-foreground size-4" />}
+              {item.label}
+            </span>
+            <span className="text-muted-foreground">{item.value}</span>
+          </div>
+        ))}
+        {mode === 'create' && (
+          <p className="text-muted-foreground mt-2 text-xs leading-5">
+            تصاویر و تنوع‌ها بعد از اولین ذخیره فعال می‌شوند.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 interface ProductEditorFormProps {
   mode: 'create' | 'edit'
   productId?: string
@@ -532,249 +680,286 @@ function ProductEditorForm({
   })
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <AdminPageHeader
-          title={mode === 'create' ? 'محصول جدید' : 'ویرایش محصول'}
-          description={
-            mode === 'create'
-              ? 'اطلاعات اصلی محصول را کامل کنید و ذخیره کنید.'
-              : product?.name
-          }
-        />
+    <form
+      id={PRODUCT_EDITOR_FORM_ID}
+      className="flex w-full flex-col gap-6"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void form.handleSubmit()
+      }}
+    >
+      <AdminPageHeader
+        title={mode === 'create' ? 'محصول جدید' : 'ویرایش محصول'}
+        description={
+          mode === 'create'
+            ? 'ابتدا اطلاعات اصلی را ذخیره کنید، سپس تصاویر و تنوع‌ها را کامل کنید.'
+            : product?.name
+        }
+      />
 
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" asChild>
-            <Link to="/dashboard/admin/products">
-              <ArrowRight />
-              بازگشت به لیست محصولات
-            </Link>
-          </Button>
-          <Button
-            type="submit"
-            form={PRODUCT_EDITOR_FORM_ID}
-            disabled={isSaving}
-          >
-            <Save />
-            {isSaving
-              ? 'در حال ذخیره...'
-              : mode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'}
-          </Button>
-        </div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <main className="flex min-w-0 flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <SectionIntro
+                title="اطلاعات فروش"
+                description="نام، آدرس صفحه و توضیحاتی که مشتری در صفحه محصول می‌بیند."
+              />
+            </CardHeader>
+            <CardContent className="grid gap-5 md:grid-cols-2">
+              <form.Field name="name">
+                {field => (
+                  <ProductTextField
+                    field={field}
+                    label="نام محصول"
+                    className="md:col-span-2"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="slug">
+                {field => (
+                  <ProductTextField
+                    field={field}
+                    label="اسلاگ (URL)"
+                    dir="ltr"
+                    inputClassName="text-start"
+                    placeholder={slugify(form.state.values.name) || 'product-slug'}
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="shortDescription">
+                {field => (
+                  <ProductTextareaField
+                    field={field}
+                    label="توضیح کوتاه"
+                    rows={3}
+                    className="md:col-span-2"
+                  />
+                )}
+              </form.Field>
+
+              <form.Field name="description">
+                {field => (
+                  <ProductTextareaField
+                    field={field}
+                    label="توضیحات کامل"
+                    rows={7}
+                    className="md:col-span-2"
+                  />
+                )}
+              </form.Field>
+            </CardContent>
+          </Card>
+
+          {mode === 'edit' && productId && product
+            ? (
+                <>
+                  <ProductImagesSection
+                    productId={productId}
+                    images={product.images}
+                  />
+                  <ProductVariantsSection
+                    key={`${product.updatedAt}-${product.variants.length}`}
+                    productId={productId}
+                    variants={product.variants}
+                    onSaved={() => onRefetch?.()}
+                  />
+                </>
+              )
+            : (
+                <>
+                  <CreateModeLockedSection
+                    title="تصاویر محصول"
+                    description="بعد از ذخیره اولیه محصول، بارگذاری گالری و انتخاب کاور فعال می‌شود."
+                    icon={ImagePlus}
+                  />
+                  <CreateModeLockedSection
+                    title="تنوع‌ها، قیمت و موجودی"
+                    description="بعد از ایجاد محصول، SKU، قیمت به تومان، موجودی و وضعیت فروش هر تنوع را اضافه کنید."
+                    icon={PackageCheck}
+                  />
+                </>
+              )}
+
+          <Card>
+            <CardHeader>
+              <SectionIntro
+                title="مشخصات محصول"
+                description="ویژگی‌های کاتالوگ برای فیلتر و نمایش جزئیات محصول."
+              />
+            </CardHeader>
+            <CardContent>
+              <form.Field name="attributeValues">
+                {field => (
+                  <ProductAttributesField
+                    field={field}
+                    attributes={attributesQuery.data ?? []}
+                  />
+                )}
+              </form.Field>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <SectionIntro
+                title="سئو (SEO)"
+                description="متادیتا از JSON زیر خوانده می‌شود و قبل از ذخیره اعتبارسنجی می‌شود."
+              />
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <form.Field name="metaJson">
+                {field => (
+                  <ProductMetaJsonField
+                    field={field}
+                    initialValue={initialMetaJson}
+                  />
+                )}
+              </form.Field>
+            </CardContent>
+          </Card>
+        </main>
+
+        <aside className="min-w-0">
+          <div className="sticky top-4 flex flex-col gap-4">
+            <Card>
+              <CardContent className="flex flex-col gap-3 py-4">
+                <Button type="submit" disabled={isSaving}>
+                  <Save />
+                  {isSaving
+                    ? 'در حال ذخیره...'
+                    : mode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'}
+                </Button>
+                <Button type="button" variant="outline" asChild>
+                  <Link to="/dashboard/admin/products">
+                    <ArrowRight />
+                    بازگشت به محصولات
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <form.Subscribe selector={state => state.values}>
+              {values => (
+                <ProductReadinessPanel
+                  mode={mode}
+                  product={product}
+                  values={values}
+                />
+              )}
+            </form.Subscribe>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>انتشار</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <form.Field name="status">
+                  {field => (
+                    <ProductSelectField
+                      className="w-full"
+                      field={field}
+                      label="وضعیت"
+                      options={productStatusOptions}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="isActive">
+                  {field => (
+                    <ProductSwitchField
+                      field={field}
+                      label="نمایش در فروشگاه"
+                    />
+                  )}
+                </form.Field>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>سازمان‌دهی</CardTitle>
+              </CardHeader>
+              <CardContent className="flex gap-4 flex-col">
+
+                <form.Field name="productType">
+                  {field => (
+                    <ProductSelectField
+                      className="w-full"
+                      field={field}
+                      label="نوع محصول"
+                      options={productTypeOptions}
+                    />
+                  )}
+                </form.Field>
+
+                <form.Field name="brandId">
+                  {field => (
+                    <ProductBrandIdField
+
+                      field={field}
+                      brandOptions={brandOptions}
+                    />
+                  )}
+                </form.Field>
+
+                <form.Field name="categoryIds">
+                  {field => (
+                    <ProductCategoriesField
+                      field={field}
+                      options={categoriesQuery.data ?? []}
+                    />
+                  )}
+                </form.Field>
+
+                <form.Field name="tagIds">
+                  {field => (
+                    <ProductTagsField
+                      field={field}
+                      options={tagsQuery.data ?? []}
+                    />
+                  )}
+                </form.Field>
+
+                <form.Field name="collectionIds">
+                  {field => (
+                    <ProductCollectionsField
+                      field={field}
+                      options={collectionsQuery.data ?? []}
+                    />
+                  )}
+                </form.Field>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>ارسال و نوع فروش</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3">
+                <form.Field name="requiresShipping">
+                  {field => (
+                    <ProductSwitchField
+                      field={field}
+                      label="نیاز به ارسال"
+                    />
+                  )}
+                </form.Field>
+
+                <form.Field name="isDigital">
+                  {field => (
+                    <ProductSwitchField
+                      field={field}
+                      label="محصول دیجیتال"
+                    />
+                  )}
+                </form.Field>
+              </CardContent>
+            </Card>
+          </div>
+        </aside>
       </div>
-      <form
-        id={PRODUCT_EDITOR_FORM_ID}
-        className="flex flex-col gap-6"
-        onSubmit={(e) => {
-          e.preventDefault()
-          void form.handleSubmit()
-        }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle>اطلاعات پایه</CardTitle>
-            <CardDescription></CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-5 md:grid-cols-2">
-            <form.Field name="name">
-              {field => (
-                <ProductTextField
-                  field={field}
-                  label="نام محصول"
-                  description="نامی که در لیست و صفحه محصول نمایش داده می‌شود."
-                  className="md:col-span-2"
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="slug">
-              {field => (
-                <ProductTextField
-                  field={field}
-                  label="اسلاگ (URL)"
-                  description="اگر خالی بماند، از نام محصول ساخته می‌شود."
-                  dir="ltr"
-                  inputClassName=" text-start"
-                  placeholder={slugify(form.state.values.name) || 'product-slug'}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="productType">
-              {field => (
-                <ProductSelectField
-                  field={field}
-                  label="نوع محصول"
-                  description="برای کالاهای ساده، متغیر، دیجیتال، باندل، اشتراک و خدمات."
-                  options={productTypeOptions}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="status">
-              {field => (
-                <ProductSelectField
-                  field={field}
-                  label="وضعیت انتشار"
-                  description="برای آماده‌سازی، انتشار یا آرشیو محصول."
-                  options={productStatusOptions}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="brandId">
-              {field => (
-                <ProductBrandIdField
-                  field={field}
-                  brandOptions={brandOptions}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="categoryIds">
-              {field => (
-                <ProductCategoriesField
-                  field={field}
-                  options={categoriesQuery.data ?? []}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="tagIds">
-              {field => (
-                <ProductTagsField
-                  field={field}
-                  options={tagsQuery.data ?? []}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="collectionIds">
-              {field => (
-                <ProductCollectionsField
-                  field={field}
-                  options={collectionsQuery.data ?? []}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="attributeValues">
-              {field => (
-                <ProductAttributesField
-                  field={field}
-                  attributes={attributesQuery.data ?? []}
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="shortDescription">
-              {field => (
-                <ProductTextareaField
-                  field={field}
-                  label="توضیح کوتاه (لیست محصولات)"
-                  description="متن کوتاه برای کارت محصول و خلاصه صفحه."
-                  rows={3}
-                  className="md:col-span-2"
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="description">
-              {field => (
-                <ProductTextareaField
-                  field={field}
-                  label="توضیحات کامل"
-                  description="توضیح کامل شامل ویژگی‌ها، کاربرد و جزئیات مهم محصول."
-                  rows={7}
-                  className="md:col-span-2"
-                />
-              )}
-            </form.Field>
-
-            <form.Field name="isActive">
-              {field => (
-                <ProductSwitchField
-                  field={field}
-                  label="نمایش در فروشگاه"
-                  description="محصول غیرفعال در فروشگاه نمایش داده نمی‌شود."
-                  className="md:col-span-2"
-                />
-              )}
-            </form.Field>
-
-            <div className="grid gap-3 md:col-span-2 md:grid-cols-2">
-              <form.Field name="requiresShipping">
-                {field => (
-                  <ProductSwitchField
-                    field={field}
-                    label="نیاز به ارسال"
-                    description="برای محصولات فیزیکی، وزن و قوانین ارسال اعمال می‌شود."
-                  />
-                )}
-              </form.Field>
-
-              <form.Field name="isDigital">
-                {field => (
-                  <ProductSwitchField
-                    field={field}
-                    label="محصول دیجیتال"
-                    description="برای فایل دانلودی، سرویس یا محصول بدون ارسال فیزیکی."
-                  />
-                )}
-              </form.Field>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>سئو (SEO)</CardTitle>
-            <CardDescription>
-              متادیتا فقط از این JSON خوانده می‌شود و قبل از ذخیره اعتبارسنجی می‌شود.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <form.Field name="metaJson">
-              {field => (
-                <ProductMetaJsonField
-                  field={field}
-                  initialValue={initialMetaJson}
-                />
-              )}
-            </form.Field>
-          </CardContent>
-        </Card>
-
-        <div className="flex flex-col-reverse gap-3 border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-          <Button type="button" variant="outline" asChild>
-            <Link to="/dashboard/admin/products">
-              <ArrowRight />
-              بازگشت به لیست محصولات
-            </Link>
-          </Button>
-          <Button type="submit" disabled={isSaving}>
-            <Save />
-            {isSaving
-              ? 'در حال ذخیره...'
-              : mode === 'create' ? 'ایجاد محصول' : 'ذخیره تغییرات'}
-          </Button>
-        </div>
-      </form>
-
-      {mode === 'edit' && productId && product && (
-        <>
-          <ProductImagesSection
-            productId={productId}
-            images={product.images}
-          />
-          <ProductVariantsSection
-            key={`${product.updatedAt}-${product.variants.length}`}
-            productId={productId}
-            variants={product.variants}
-            onSaved={() => onRefetch?.()}
-          />
-        </>
-      )}
-    </div>
+    </form>
   )
 }

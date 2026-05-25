@@ -48,11 +48,11 @@ import {
   adminTagInputSchema as tagInputSchema,
 } from '#/orpc/schemas/admin/catalog'
 
-type BrandPayload = z.infer<typeof adminBrandInputSchema>
-type CategoryPayload = z.infer<typeof adminCategoryInputSchema>
-type AttributePayload = z.infer<typeof adminAttributeInputSchema>
-type CollectionPayload = z.infer<typeof adminCollectionInputSchema>
-type TagPayload = z.infer<typeof adminTagInputSchema>
+type BrandPayload = z.infer<typeof brandInputSchema>
+type CategoryPayload = z.infer<typeof categoryInputSchema>
+type AttributePayload = z.infer<typeof attributeInputSchema>
+type CollectionPayload = z.infer<typeof collectionInputSchema>
+type TagPayload = z.infer<typeof tagInputSchema>
 
 interface BrandFormValue {
   name: string

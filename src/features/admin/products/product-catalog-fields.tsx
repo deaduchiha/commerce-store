@@ -2,8 +2,6 @@ import type { AnyFieldApi } from '@tanstack/react-form'
 import type { z } from 'zod'
 import type { AdminAttribute } from '#/orpc/schemas/admin/catalog'
 import type { adminProductAttributeValueSchema } from '#/orpc/schemas/admin/products'
-
-type AdminProductAttributeValue = z.infer<typeof adminProductAttributeValueSchema>
 import { Link } from '@tanstack/react-router'
 
 import { Button } from '#/components/ui/button'
@@ -24,6 +22,8 @@ import {
 import { Switch } from '#/components/ui/switch'
 import { useShowFieldError } from '#/features/settings/components/field-validation'
 import { buildCategoryTreeOptions } from '#/lib/catalog-categories'
+
+type AdminProductAttributeValue = z.infer<typeof adminProductAttributeValueSchema>
 
 export function ProductCategoriesField({
   field,
@@ -58,10 +58,10 @@ export function ProductCategoriesField({
           مدیریت دسته‌بندی‌ها
         </Link>
       </FieldDescription>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2">
         {treeOptions.length === 0
           ? (
-              <div className="text-muted-foreground flex flex-col gap-2 border p-3 text-sm sm:col-span-2 lg:col-span-3">
+              <div className="text-muted-foreground flex flex-col gap-2 border p-3 text-sm">
                 <span>ابتدا از بخش کاتالوگ دسته‌بندی بسازید.</span>
                 <Button asChild variant="outline" size="sm" className="w-fit">
                   <Link to="/dashboard/admin/catalog/categories">
@@ -134,10 +134,10 @@ function CatalogMultiSelectField({
           {catalogLinkLabel}
         </Link>
       </FieldDescription>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2">
         {options.length === 0
           ? (
-              <div className="text-muted-foreground flex flex-col gap-2 border p-3 text-sm sm:col-span-2 lg:col-span-3">
+              <div className="text-muted-foreground flex flex-col gap-2 border p-3 text-sm">
                 <span>{emptyMessage}</span>
                 <Button asChild variant="outline" size="sm" className="w-fit">
                   <Link to={catalogLink}>{catalogLinkLabel}</Link>

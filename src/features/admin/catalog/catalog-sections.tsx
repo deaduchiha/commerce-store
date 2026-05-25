@@ -166,10 +166,14 @@ export function BrandsSection() {
           defaultValues={editing ? brandToForm(editing) : emptyBrandForm}
           isSaving={createMutation.isPending || updateMutation.isPending}
           onCancel={closeForm}
-          onSubmit={data =>
-            editing
-              ? updateMutation.mutateAsync({ id: editing.id, data })
-              : createMutation.mutateAsync(data)}
+          onSubmit={data => editing
+            ? updateMutation.mutateAsync({
+                id: editing.id,
+                data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+              })
+            : createMutation.mutateAsync(
+                data as Parameters<typeof createMutation.mutateAsync>[0],
+              )}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -288,10 +292,14 @@ export function CategoriesSection() {
           parentOptions={parentOptions}
           isSaving={createMutation.isPending || updateMutation.isPending}
           onCancel={closeForm}
-          onSubmit={data =>
-            editing
-              ? updateMutation.mutateAsync({ id: editing.id, data })
-              : createMutation.mutateAsync(data)}
+          onSubmit={data => editing
+            ? updateMutation.mutateAsync({
+                id: editing.id,
+                data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+              })
+            : createMutation.mutateAsync(
+                data as Parameters<typeof createMutation.mutateAsync>[0],
+              )}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
@@ -394,10 +402,14 @@ export function AttributesSection() {
           defaultValues={editing ? attributeToForm(editing) : emptyAttributeForm}
           isSaving={createMutation.isPending || updateMutation.isPending}
           onCancel={closeForm}
-          onSubmit={data =>
-            editing
-              ? updateMutation.mutateAsync({ id: editing.id, data })
-              : createMutation.mutateAsync(data)}
+          onSubmit={data => editing
+            ? updateMutation.mutateAsync({
+                id: editing.id,
+                data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+              })
+            : createMutation.mutateAsync(
+                data as Parameters<typeof createMutation.mutateAsync>[0],
+              )}
         />
       </EntityFormDialog>
       <DeleteCatalogDialog
