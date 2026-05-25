@@ -68,7 +68,7 @@ export function AdminUsersPage() {
         {users.map(user => (
           <DataTableRow key={user.id}>
             <DataTableCell>{user.name}</DataTableCell>
-            <DataTableCell className="font-mono text-xs">{user.email}</DataTableCell>
+            <DataTableCell className="text-xs">{user.email}</DataTableCell>
             <DataTableCell>{user.phoneNumber ?? '—'}</DataTableCell>
             <DataTableCell>
               {user.role === 'admin'

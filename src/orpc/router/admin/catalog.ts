@@ -217,6 +217,13 @@ export const updateCategory = os
   .input(catalogIdSchema.extend({ data: adminCategoryInputSchema.partial() }))
   .handler(async ({ context, input }) => {
     await assertAdmin(context)
+
+    if (input.data.parentId === input.id) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'A category cannot be its own parent.',
+      })
+    }
+
     const [row] = await db
       .update(categories)
       .set({
@@ -237,6 +244,38 @@ export const updateCategory = os
     }
 
     return categoryDto(row)
+  })
+
+export const deleteBrand = os
+  .input(catalogIdSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .delete(brands)
+      .where(eq(brands.id, input.id))
+      .returning({ id: brands.id })
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Brand not found.' })
+    }
+
+    return row
+  })
+
+export const deleteCategory = os
+  .input(catalogIdSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .delete(categories)
+      .where(eq(categories.id, input.id))
+      .returning({ id: categories.id })
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Category not found.' })
+    }
+
+    return row
   })
 
 export const listAttributes = os
@@ -287,6 +326,69 @@ export const createAttribute = os
     return attributeDto(row!)
   })
 
+export const updateAttribute = os
+  .input(catalogIdSchema.extend({ data: adminAttributeInputSchema.partial() }))
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .update(attributes)
+      .set({
+        code: input.data.code,
+        name: input.data.name,
+        type: input.data.type,
+        scope: input.data.scope,
+        unit: input.data.unit !== undefined
+          ? emptyToNull(input.data.unit)
+          : undefined,
+        isFilterable: input.data.isFilterable,
+        isVariantOption: input.data.isVariantOption,
+        isRequired: input.data.isRequired,
+        sortOrder: input.data.sortOrder,
+      })
+      .where(eq(attributes.id, input.id))
+      .returning()
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Attribute not found.' })
+    }
+
+    if (input.data.values) {
+      await db
+        .delete(attributeValues)
+        .where(eq(attributeValues.attributeId, input.id))
+
+      if (input.data.values.length > 0) {
+        await db.insert(attributeValues).values(
+          input.data.values.map(value => ({
+            attributeId: input.id,
+            value: value.value,
+            slug: emptyToNull(value.slug),
+            colorHex: emptyToNull(value.colorHex),
+            sortOrder: value.sortOrder ?? 0,
+          })),
+        )
+      }
+    }
+
+    return attributeDto(row)
+  })
+
+export const deleteAttribute = os
+  .input(catalogIdSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .delete(attributes)
+      .where(eq(attributes.id, input.id))
+      .returning({ id: attributes.id })
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Attribute not found.' })
+    }
+
+    return row
+  })
+
 export const listCollections = os
   .input(catalogListInputSchema)
   .handler(async ({ context, input }) => {
@@ -320,6 +422,50 @@ export const createCollection = os
     return collectionDto(row!)
   })
 
+export const updateCollection = os
+  .input(catalogIdSchema.extend({ data: adminCollectionInputSchema.partial() }))
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .update(collections)
+      .set({
+        slug: input.data.slug,
+        name: input.data.name,
+        description: input.data.description !== undefined
+          ? emptyToNull(input.data.description)
+          : undefined,
+        type: input.data.type,
+        rulesJson: input.data.rulesJson !== undefined
+          ? emptyToNull(input.data.rulesJson)
+          : undefined,
+        isActive: input.data.isActive,
+      })
+      .where(eq(collections.id, input.id))
+      .returning()
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Collection not found.' })
+    }
+
+    return collectionDto(row)
+  })
+
+export const deleteCollection = os
+  .input(catalogIdSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .delete(collections)
+      .where(eq(collections.id, input.id))
+      .returning({ id: collections.id })
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Collection not found.' })
+    }
+
+    return row
+  })
+
 export const listTags = os
   .input(catalogListInputSchema)
   .handler(async ({ context, input }) => {
@@ -350,4 +496,45 @@ export const createTag = os
       .returning()
 
     return tagDto(row!)
+  })
+
+export const updateTag = os
+  .input(catalogIdSchema.extend({ data: adminTagInputSchema.partial() }))
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .update(tags)
+      .set({
+        slug: input.data.slug,
+        name: input.data.name,
+        type: input.data.type,
+        color: input.data.color !== undefined
+          ? emptyToNull(input.data.color)
+          : undefined,
+        isActive: input.data.isActive,
+      })
+      .where(eq(tags.id, input.id))
+      .returning()
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Tag not found.' })
+    }
+
+    return tagDto(row)
+  })
+
+export const deleteTag = os
+  .input(catalogIdSchema)
+  .handler(async ({ context, input }) => {
+    await assertAdmin(context)
+    const [row] = await db
+      .delete(tags)
+      .where(eq(tags.id, input.id))
+      .returning({ id: tags.id })
+
+    if (!row) {
+      throw new ORPCError('NOT_FOUND', { message: 'Tag not found.' })
+    }
+
+    return row
   })

@@ -129,7 +129,7 @@ export function AdminProductsPage() {
         cell: ({ row }) => (
           <div className="min-w-48">
             <div className="font-medium">{row.original.name}</div>
-            <div className="text-muted-foreground font-mono text-xs">
+            <div className="text-muted-foreground text-xs">
               {row.original.slug}
             </div>
           </div>

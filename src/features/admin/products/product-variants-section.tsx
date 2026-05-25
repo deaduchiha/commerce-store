@@ -271,7 +271,6 @@ export function ProductVariantsSection({
                 <Input
                   id={`variant-${index}-sku`}
                   dir="ltr"
-                  className="font-mono"
                   value={variant.sku}
                   aria-invalid={submitted && Boolean(fieldError(index, 'sku'))}
                   onChange={event =>

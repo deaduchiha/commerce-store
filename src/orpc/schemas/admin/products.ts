@@ -62,6 +62,7 @@ export const adminProductDetailSchema = z.object({
   description: z.string().nullable(),
   brandId: z.string().nullable(),
   brand: z.string().nullable(),
+  categoryIds: z.array(z.string()),
   metaTitle: z.string().nullable(),
   metaDescription: z.string().nullable(),
   metaKeywords: z.string().nullable(),
@@ -77,12 +78,18 @@ export const adminProductDetailSchema = z.object({
 export const adminProductFormSchema = z.object({
   name: z.string().trim().min(2, 'نام محصول باید حداقل ۲ کاراکتر باشد').max(120),
   slug: z.string(),
+  productType: z.enum(['simple', 'variable', 'bundle', 'digital', 'subscription', 'service']),
+  status: z.enum(['draft', 'active', 'archived']),
+  brandId: z.string(),
   brand: z.string(),
+  categoryIds: z.array(z.string()),
   shortDescription: z.string(),
   description: z.string(),
   metaTitle: z.string(),
   metaDescription: z.string(),
   metaKeywords: z.string(),
+  requiresShipping: z.boolean(),
+  isDigital: z.boolean(),
   isActive: z.boolean(),
 })
 
@@ -95,7 +102,11 @@ export const adminProductMetaSchema = z.object({
 export const adminProductFormWithMetaSchema = z.object({
   name: z.string().trim().min(2, 'نام محصول باید حداقل ۲ کاراکتر باشد').max(120),
   slug: z.string(),
+  productType: z.enum(['simple', 'variable', 'bundle', 'digital', 'subscription', 'service']),
+  status: z.enum(['draft', 'active', 'archived']),
+  brandId: z.string(),
   brand: z.string(),
+  categoryIds: z.array(z.string()),
   shortDescription: z.string(),
   description: z.string(),
   metaJson: z.string().superRefine((value, ctx) => {
@@ -120,6 +131,8 @@ export const adminProductFormWithMetaSchema = z.object({
       })
     }
   }),
+  requiresShipping: z.boolean(),
+  isDigital: z.boolean(),
   isActive: z.boolean(),
 })
 
@@ -134,8 +147,9 @@ export const adminProductInputSchema = z.object({
     .max(120)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .optional(),
-  brandId: z.string().trim().min(1).optional(),
+  brandId: z.string().trim().max(255).optional(),
   brand: z.string().trim().max(80).optional(),
+  categoryIds: z.array(z.string().trim().min(1)).optional(),
   shortDescription: z.string().trim().max(300).optional(),
   description: z.string().trim().max(10000).optional(),
   metaTitle: z.string().trim().max(70).optional(),

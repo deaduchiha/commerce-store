@@ -19,6 +19,7 @@ import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard/admin/index'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard/admin/users'
 import { Route as DashboardAdminPaymentsRouteImport } from './routes/dashboard/admin/payments'
+import { Route as DashboardAdminCatalogRouteImport } from './routes/dashboard/admin/catalog'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardAdminProductsIndexRouteImport } from './routes/dashboard/admin/products/index'
@@ -76,6 +77,11 @@ const DashboardAdminPaymentsRoute = DashboardAdminPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => DashboardAdminRoute,
 } as any)
+const DashboardAdminCatalogRoute = DashboardAdminCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRoute
   '/dashboard/admin/payments': typeof DashboardAdminPaymentsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRoute
   '/dashboard/admin/payments': typeof DashboardAdminPaymentsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin': typeof DashboardAdminIndexRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/dashboard/admin/catalog': typeof DashboardAdminCatalogRoute
   '/dashboard/admin/payments': typeof DashboardAdminPaymentsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/dashboard/admin/catalog'
     | '/dashboard/admin/payments'
     | '/dashboard/admin/users'
     | '/dashboard/admin/'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/dashboard/admin/catalog'
     | '/dashboard/admin/payments'
     | '/dashboard/admin/users'
     | '/dashboard/admin'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/dashboard/admin/catalog'
     | '/dashboard/admin/payments'
     | '/dashboard/admin/users'
     | '/dashboard/admin/'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminPaymentsRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/dashboard/admin/catalog': {
+      id: '/dashboard/admin/catalog'
+      path: '/catalog'
+      fullPath: '/dashboard/admin/catalog'
+      preLoaderRoute: typeof DashboardAdminCatalogRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -347,6 +366,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardAdminRouteChildren {
+  DashboardAdminCatalogRoute: typeof DashboardAdminCatalogRoute
   DashboardAdminPaymentsRoute: typeof DashboardAdminPaymentsRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
   DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
@@ -356,6 +376,7 @@ interface DashboardAdminRouteChildren {
 }
 
 const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
+  DashboardAdminCatalogRoute: DashboardAdminCatalogRoute,
   DashboardAdminPaymentsRoute: DashboardAdminPaymentsRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
   DashboardAdminIndexRoute: DashboardAdminIndexRoute,

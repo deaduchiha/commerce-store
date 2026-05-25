@@ -4,7 +4,12 @@ import { ORPCError, os } from '@orpc/server'
 import { and, asc, count, desc, eq, like, notInArray, or } from 'drizzle-orm'
 
 import { db } from '#/db'
-import { productImages, products, productVariants } from '#/db/schema'
+import {
+  productCategories,
+  productImages,
+  products,
+  productVariants,
+} from '#/db/schema'
 import { slugify } from '#/lib/slug'
 import { deleteProductImageFile } from '#/lib/uploads/product-images'
 import { requireAdmin } from '#/orpc/lib/require-admin'
@@ -91,6 +96,11 @@ async function loadProductDetail(productId: string) {
     .where(eq(productVariants.productId, productId))
     .orderBy(asc(productVariants.createdAt))
 
+  const categories = await db
+    .select({ categoryId: productCategories.categoryId })
+    .from(productCategories)
+    .where(eq(productCategories.productId, productId))
+
   return adminProductDetailSchema.parse({
     id: row.id,
     productType: row.productType,
@@ -101,6 +111,7 @@ async function loadProductDetail(productId: string) {
     description: row.description ?? null,
     brandId: row.brandId ?? null,
     brand: row.brand ?? null,
+    categoryIds: categories.map(category => category.categoryId),
     metaTitle: row.metaTitle ?? null,
     metaDescription: row.metaDescription ?? null,
     metaKeywords: row.metaKeywords ?? null,
@@ -112,6 +123,32 @@ async function loadProductDetail(productId: string) {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   })
+}
+
+async function replaceProductCategories(
+  productId: string,
+  categoryIds: string[] | undefined,
+) {
+  if (!categoryIds) {
+    return
+  }
+
+  await db
+    .delete(productCategories)
+    .where(eq(productCategories.productId, productId))
+
+  const uniqueCategoryIds = [...new Set(categoryIds)]
+
+  if (uniqueCategoryIds.length === 0) {
+    return
+  }
+
+  await db.insert(productCategories).values(
+    uniqueCategoryIds.map(categoryId => ({
+      productId,
+      categoryId,
+    })),
+  )
 }
 
 function productPatchFromInput(
@@ -271,6 +308,8 @@ export const create = os
       })
       .returning()
 
+    await replaceProductCategories(row!.id, input.categoryIds)
+
     const detail = await loadProductDetail(row!.id)
     return detail!
   })
@@ -321,6 +360,8 @@ export const update = os
         isActive: patch.isActive,
       })
       .where(eq(products.id, input.id))
+
+    await replaceProductCategories(input.id, input.data.categoryIds)
 
     const detail = await loadProductDetail(input.id)
     return detail!
