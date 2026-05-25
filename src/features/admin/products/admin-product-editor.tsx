@@ -18,6 +18,7 @@ import {
   Save,
   WandSparkles,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import { toast } from 'sonner'
 
 import { AdminPageHeader } from '#/components/admin/admin-page-header'
@@ -66,6 +67,7 @@ import {
 } from '#/orpc/schemas/admin/products'
 
 const PRODUCT_EDITOR_FORM_ID = 'product-editor-form'
+const PRODUCT_IMAGES_SECTION_ID = 'product-images'
 
 const productTypeOptions = [
   { value: 'simple', label: 'ساده' },
@@ -171,6 +173,7 @@ export function AdminProductEditor({ mode, productId }: AdminProductEditorProps)
         void navigate({
           to: '/dashboard/admin/products/$productId/edit',
           params: { productId: data.id },
+          hash: PRODUCT_IMAGES_SECTION_ID,
         })
       },
       onError: () => toast.error('ایجاد محصول انجام نشد.'),
@@ -679,6 +682,24 @@ function ProductEditorForm({
     },
   })
 
+  useEffect(() => {
+    if (mode !== 'edit') {
+      return
+    }
+
+    if (window.location.hash !== `#${PRODUCT_IMAGES_SECTION_ID}`) {
+      return
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(PRODUCT_IMAGES_SECTION_ID)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [mode, product?.updatedAt])
+
   return (
     <form
       id={PRODUCT_EDITOR_FORM_ID}
@@ -756,10 +777,15 @@ function ProductEditorForm({
           {mode === 'edit' && productId && product
             ? (
                 <>
-                  <ProductImagesSection
-                    productId={productId}
-                    images={product.images}
-                  />
+                  <section
+                    id={PRODUCT_IMAGES_SECTION_ID}
+                    className="scroll-mt-6"
+                  >
+                    <ProductImagesSection
+                      productId={productId}
+                      images={product.images}
+                    />
+                  </section>
                   <ProductVariantsSection
                     key={`${product.updatedAt}-${product.variants.length}`}
                     productId={productId}
