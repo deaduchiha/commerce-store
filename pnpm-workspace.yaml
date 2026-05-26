@@ -1,5 +1,10 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
 allowBuilds:
   better-sqlite3: true
   esbuild: true
-  msw: true
+  lightningcss: true
+  msw: false
   unrs-resolver: true
