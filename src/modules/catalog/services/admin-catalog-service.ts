@@ -4,6 +4,7 @@ import type {
   adminAttributeInputSchema,
   adminBrandInputSchema,
   adminCategoryInputSchema,
+  adminCategoryReorderSchema,
   adminCollectionInputSchema,
   adminCollectionProductsInputSchema,
   adminCollectionProductsUpdateSchema,
@@ -13,8 +14,7 @@ import type {
 } from '#/orpc/schemas/admin/catalog'
 import { ORPCError } from '@orpc/server'
 
-import { and, asc, eq, inArray, like, or } from 'drizzle-orm'
-import { slugifyAttributeValue } from '#/lib/slug'
+import { and, asc, eq, inArray, isNull, like, or } from 'drizzle-orm'
 import { db } from '#/db'
 import {
   attributes,
@@ -27,6 +27,7 @@ import {
   tags,
 } from '#/db/schema'
 import { rebuildCategoryClosure } from '#/lib/category-closure'
+import { slugifyAttributeValue } from '#/lib/slug'
 import {
   adminAttributeSchema,
   adminBrandSchema,
@@ -40,6 +41,7 @@ type CatalogIdInput = z.infer<typeof catalogIdSchema>
 type CatalogListInput = z.infer<typeof catalogListInputSchema>
 type BrandInput = z.infer<typeof adminBrandInputSchema>
 type CategoryInput = z.infer<typeof adminCategoryInputSchema>
+type CategoryReorderInput = z.infer<typeof adminCategoryReorderSchema>
 type AttributeInput = z.infer<typeof adminAttributeInputSchema>
 type CollectionInput = z.infer<typeof adminCollectionInputSchema>
 type TagInput = z.infer<typeof adminTagInputSchema>
@@ -366,6 +368,40 @@ export const adminCatalogService = {
     await rebuildCategoryClosure()
 
     return categoryDto(row)
+  },
+
+  async reorderCategories(input: CategoryReorderInput) {
+    const parentId = input.parentId ?? null
+    const parentCondition = parentId === null
+      ? isNull(categories.parentId)
+      : eq(categories.parentId, parentId)
+
+    const siblings = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(parentCondition)
+
+    const siblingIds = new Set(siblings.map(row => row.id))
+    const orderedSet = new Set(input.orderedIds)
+
+    if (
+      siblingIds.size !== input.orderedIds.length
+      || orderedSet.size !== input.orderedIds.length
+      || input.orderedIds.some(id => !siblingIds.has(id))
+    ) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'ترتیب دسته‌بندی‌ها معتبر نیست.',
+      })
+    }
+
+    for (const [index, id] of input.orderedIds.entries()) {
+      await db
+        .update(categories)
+        .set({ sortOrder: index })
+        .where(eq(categories.id, id))
+    }
+
+    return { parentId, count: input.orderedIds.length }
   },
 
   async deleteCategory(input: CatalogIdInput) {

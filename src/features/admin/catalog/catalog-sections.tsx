@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import { applyCategoryReorder } from '#/lib/catalog-categories'
 import { invalidateCatalogProductQueries } from '#/lib/catalog-invalidation'
 import { orpc } from '#/orpc/client'
 
@@ -50,10 +51,10 @@ import {
 import {
   AttributesTable,
   BrandsTable,
-  CategoriesTable,
   CollectionsTable,
   TagsTable,
 } from './catalog-tables'
+import { CategoriesTreeList } from './categories-tree-list'
 import { CollectionProductsPanel } from './collection-products-panel'
 
 const searchEmptyMessage = 'موردی با این جستجو پیدا نشد.'
@@ -194,22 +195,26 @@ export function CategoriesSection() {
   const [deleting, setDeleting] = useState<AdminCategory | null>(null)
   const [open, setOpen] = useState(false)
 
-  const { debouncedSearch } = useCatalogSearch()
+  const { debouncedSearch, isSearchActive } = useCatalogSearch()
+  const listCategoriesInput = { search: debouncedSearch || undefined }
+  const allListQueryOptions = orpc.admin.catalog.listCategories.queryOptions({
+    input: {},
+  })
+  const searchListQueryOptions = orpc.admin.catalog.listCategories.queryOptions({
+    input: listCategoriesInput,
+  })
   const query = useQuery({
-    ...orpc.admin.catalog.listCategories.queryOptions({
-      input: { search: debouncedSearch || undefined },
-    }),
+    ...searchListQueryOptions,
     placeholderData: keepPreviousData,
   })
-  const allCategoriesQuery = useQuery(
-    orpc.admin.catalog.listCategories.queryOptions({ input: {} }),
-  )
+  const allCategoriesQuery = useQuery(allListQueryOptions)
   const categories = query.data ?? []
-  const { emptyMessage } = useCatalogListQuery(categories, query.isPending)
-  const parentById = useMemo(
-    () => new Map((allCategoriesQuery.data ?? []).map(category => [category.id, category])),
-    [allCategoriesQuery.data],
-  )
+  const allCategories = allCategoriesQuery.data ?? []
+  const tableItems = isSearchActive ? categories : allCategories
+  const isTableLoading = isSearchActive
+    ? query.isPending
+    : allCategoriesQuery.isPending
+  const { emptyMessage } = useCatalogListQuery(tableItems, isTableLoading)
   const parentOptions = useMemo(
     () => (allCategoriesQuery.data ?? []).filter(
       category => category.id !== editing?.id,
@@ -248,6 +253,41 @@ export function CategoriesSection() {
       onError: () => toast.error('حذف دسته‌بندی انجام نشد.'),
     }),
   )
+  const reorderMutation = useMutation(
+    orpc.admin.catalog.reorderCategories.mutationOptions({
+      onMutate: async (input) => {
+        await queryClient.cancelQueries({
+          queryKey: orpc.admin.catalog.listCategories.key(),
+        })
+
+        const previousAll = queryClient.getQueryData(allListQueryOptions.queryKey)
+        const previousSearch = queryClient.getQueryData(searchListQueryOptions.queryKey)
+
+        const updater = (current: AdminCategory[] | undefined) =>
+          current
+            ? applyCategoryReorder(current, input.parentId, input.orderedIds)
+            : current
+
+        queryClient.setQueryData(allListQueryOptions.queryKey, updater)
+        queryClient.setQueryData(searchListQueryOptions.queryKey, updater)
+
+        return { previousAll, previousSearch }
+      },
+      onError: (_error, _input, context) => {
+        if (context?.previousAll) {
+          queryClient.setQueryData(allListQueryOptions.queryKey, context.previousAll)
+        }
+        if (context?.previousSearch) {
+          queryClient.setQueryData(searchListQueryOptions.queryKey, context.previousSearch)
+        }
+        toast.error('ذخیره ترتیب انجام نشد.')
+      },
+      onSuccess: async () => {
+        await invalidate()
+        toast.success('ترتیب ذخیره شد.')
+      },
+    }),
+  )
 
   function closeForm() {
     setOpen(false)
@@ -263,16 +303,22 @@ export function CategoriesSection() {
           setOpen(true)
         }}
       />
-      <CategoriesTable
-        items={categories}
-        parentById={parentById}
-        isLoading={query.isPending}
+      <CategoriesTreeList
+        items={tableItems}
+        allItems={allCategories}
+        isLoading={isTableLoading}
         emptyMessage={emptyMessage}
+        sortableEnabled={!isSearchActive}
+        isSearchActive={isSearchActive}
+        searchHint={
+          isSearchActive ? 'برای مرتب‌سازی، جستجو را پاک کنید.' : undefined
+        }
         onEdit={(item) => {
           setEditing(item)
           setOpen(true)
         }}
         onDelete={setDeleting}
+        onReorder={input => reorderMutation.mutate(input)}
       />
       <EntityFormDialog
         open={open}

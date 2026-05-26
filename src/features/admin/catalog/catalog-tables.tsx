@@ -1,7 +1,6 @@
 import type {
   AdminAttribute,
   AdminBrand,
-  AdminCategory,
   AdminCollection,
   AdminTag,
 } from '#/orpc/schemas/admin/catalog'
@@ -46,49 +45,6 @@ export function BrandsTable({
           <RowActions
             editLabel="ویرایش برند"
             deleteLabel="حذف برند"
-            onEdit={() => onEdit(item)}
-            onDelete={() => onDelete(item)}
-          />
-        </TableRow>
-      ))}
-    </CatalogTable>
-  )
-}
-
-export function CategoriesTable({
-  items,
-  parentById,
-  isLoading,
-  emptyMessage,
-  onEdit,
-  onDelete,
-}: {
-  items: AdminCategory[]
-  parentById: Map<string, AdminCategory>
-  isLoading: boolean
-  emptyMessage?: string
-  onEdit: (item: AdminCategory) => void
-  onDelete: (item: AdminCategory) => void
-}) {
-  return (
-    <CatalogTable
-      isLoading={isLoading}
-      columns={['نام', 'والد', 'اسلاگ', 'ترتیب', 'وضعیت', 'عملیات']}
-      isEmpty={items.length === 0}
-      emptyMessage={emptyMessage}
-    >
-      {items.map(item => (
-        <TableRow key={item.id}>
-          <TableCell className="font-medium">{item.name}</TableCell>
-          <TableCell>
-            {item.parentId ? parentById.get(item.parentId)?.name ?? '-' : '-'}
-          </TableCell>
-          <TableCell className="text-xs">{item.slug}</TableCell>
-          <TableCell>{item.sortOrder.toLocaleString('fa-IR')}</TableCell>
-          <StatusCell active={item.isActive} />
-          <RowActions
-            editLabel="ویرایش دسته‌بندی"
-            deleteLabel="حذف دسته‌بندی"
             onEdit={() => onEdit(item)}
             onDelete={() => onDelete(item)}
           />

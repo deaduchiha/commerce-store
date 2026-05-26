@@ -7,6 +7,7 @@ import {
   adminAttributeInputSchema,
   adminBrandInputSchema,
   adminCategoryInputSchema,
+  adminCategoryReorderSchema,
   adminCollectionInputSchema,
   adminCollectionProductsInputSchema,
   adminCollectionProductsUpdateSchema,
@@ -60,6 +61,10 @@ export const updateCategory = os
 export const deleteCategory = os
   .input(catalogIdSchema)
   .handler(adminHandler(adminCatalogService.deleteCategory))
+
+export const reorderCategories = os
+  .input(adminCategoryReorderSchema)
+  .handler(adminHandler(adminCatalogService.reorderCategories))
 
 export const listAttributes = os
   .input(catalogListInputSchema)

@@ -71,7 +71,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               {children}
             </TooltipProvider>
           </DirectionProvider>
-          <Toaster style={{ fontFamily: 'unset' }} richColors position="top-right" />
+          <Toaster style={{ fontFamily: 'unset' }} richColors position="top-right" theme="light" closeButton />
         </ThemeProvider>
         {/* <TanStackDevtools
           config={{

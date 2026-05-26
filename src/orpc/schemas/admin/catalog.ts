@@ -93,6 +93,11 @@ export const adminCategoryInputSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
+export const adminCategoryReorderSchema = z.object({
+  parentId: z.string().nullable(),
+  orderedIds: z.array(z.string().min(1)).min(1),
+})
+
 export const adminAttributeValueSchema = z.object({
   id: z.string(),
   attributeId: z.string(),
