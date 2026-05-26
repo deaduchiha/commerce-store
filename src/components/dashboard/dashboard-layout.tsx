@@ -21,7 +21,7 @@ export function DashboardLayout({ session }: DashboardLayoutProps) {
     <SidebarProvider>
       <AppSidebar session={session} />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b py-8 px-4 sticky bg-background z-20 top-0">
           <SidebarTrigger className="-ms-1" />
 
           <Separator
